@@ -2,20 +2,71 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
-from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QVBoxLayout,
-    QWidget,
-    QPushButton,
-    QInputDialog,
-    QMessageBox,
-)
+from PyQt5.QtWidgets import ( QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QInputDialog,QMessageBox, QLabel)
+from PyQt5.QtGui import QPixmap
+from algorithmes.Dijkstra import dijkstra
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtWidgets import (QApplication,QMainWindow,QVBoxLayout,QWidget,QPushButton,QInputDialog,QMessageBox)
 from PyQt5.QtCore import QTimer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.patches import FancyArrowPatch
 from algorithmes.coloration import welch_powell
 from algorithmes.prim import prim_mst
+
+
+button_style = """
+QPushButton {
+    background-color: white;
+    color: black;
+    border: 2px solid #555;
+    border-radius: 10px;
+    padding: 5px;
+    font-size: 16px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: #eeeeee;
+}
+QPushButton:pressed {
+    background-color: #cccccc;
+}
+"""
+
+
+class MainMenu(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Graph Theory App")
+        self.setGeometry(100, 100, 800, 600)
+        self.setFixedSize(800, 600)
+        self.setStyleSheet("background-color: pink;")
+
+        widget = QWidget(self)
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        widget.setGeometry(250, 200, 300, 200)
+
+        menu_label = QLabel("Menu", widget)
+        menu_label.setAlignment(Qt.AlignCenter)
+        menu_label.setStyleSheet("font-size: 24px; font-weight: bold; color: white;")
+        layout.addWidget(menu_label)
+
+        start_button = QPushButton("Début création du graphe", widget)
+        start_button.setStyleSheet(button_style)
+        start_button.clicked.connect(self.launchGraphDesigner)
+        layout.addWidget(start_button)
+
+        store_button = QPushButton("Stockage graphe", widget)
+        store_button.setStyleSheet(button_style)
+        layout.addWidget(store_button)
+
+    def launchGraphDesigner(self):
+        self.graph_designer = GraphDesigner()
+        self.graph_designer.show()
+
 
 
 class GraphDesigner(QMainWindow):
@@ -52,6 +103,10 @@ class GraphDesigner(QMainWindow):
         self.primButton.clicked.connect(self.run_prim)
         layout.addWidget(self.primButton)
         self.canvas.mpl_connect("button_press_event", self.on_click)
+        self.dijkstraButton = QPushButton("Exécuter Dijkstra")
+        self.dijkstraButton.clicked.connect(self.run_dijkstra)
+        layout.addWidget(self.dijkstraButton)
+
 
     def findStableSet(self):
         self.stable_set = welch_powell(self.G)
@@ -67,6 +122,16 @@ class GraphDesigner(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_graph)
         self.timer.start(1000)
+
+    def run_dijkstra(self):
+        if not self.G.nodes:
+            QMessageBox.warning(self, "Error", "Aucun nœud présent dans le graphe.")
+            return
+        source_node = list(self.G.nodes())[0]
+        path = dijkstra(self.G, source_node)
+        print("Dijkstra result:", path)
+        QMessageBox.information(self, "Dijkstra Completed", "Dijkstra's algorithm has completed. Check console for output.")
+
 
     def visualize_step(self, mst):
         self.animation_steps.append(mst)
@@ -202,10 +267,9 @@ class GraphDesigner(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    ex = GraphDesigner()
-    ex.show()
+    main_menu = MainMenu()
+    main_menu.show()
     sys.exit(app.exec_())
-
 
 if __name__ == "__main__":
     main()
