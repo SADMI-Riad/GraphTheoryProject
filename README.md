@@ -61,8 +61,7 @@ Cette application de théorie des graphes est conçue pour aider les utilisateur
 
 ## Auteurs
 
-- Votre nom
+- Sadmi Mohammed Riad
+- Mezghenna Mohanned
 
-## License
 
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
