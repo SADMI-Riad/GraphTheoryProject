@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog
 from PyQt5.QtCore import QTimer
 import matplotlib.pyplot as plt
+from networkx import maximal_independent_set
 import numpy as np
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -120,7 +121,7 @@ class GraphDesigner(QMainWindow):
         self.endEdgesCreationButton.setDisabled(True)
 
     def findStableSet(self):
-        self.stable_set = welch_powell(self.G)
+        self.stable_set = maximal_independent_set(self.G)
         redrawGraph(self.ax, self.G, self.pos, self.stable_set, self.canvas)
 
     def animateWelshPowell(self):

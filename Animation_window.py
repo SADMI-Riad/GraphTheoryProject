@@ -1,3 +1,4 @@
+# Animation_window.py
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 from PyQt5.QtCore import QTimer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -34,27 +35,35 @@ class AnimationWindow(QMainWindow):
     def run_animation(self):
         sorted_nodes = sorted(self.G.nodes(), key=lambda x: self.G.degree(x), reverse=True)
         color = {}
-        max_color = 0
-        for node in sorted_nodes:
-            available_colors = {color[neighbor] for neighbor in self.G.neighbors(node) if neighbor in color}
-            node_color = next(color for color in range(max_color + 1) if color not in available_colors)
-            color[node] = node_color
-            if node_color == max_color:
-                max_color += 1
-            stable_set = [node for node, col in color.items() if col == 0]
-            self.animation_steps.append((color.copy(), stable_set))
+        current_color = 0
+        
+        while sorted_nodes:
+            node = sorted_nodes.pop(0)
+            color[node] = current_color
+            non_adjacent_nodes = [node]
+            
+            for other_node in sorted_nodes[:]:
+                if all(not self.G.has_edge(other_node, n) for n in non_adjacent_nodes):
+                    color[other_node] = current_color
+                    non_adjacent_nodes.append(other_node)
+                    sorted_nodes.remove(other_node)
+            
+            self.animation_steps.append(color.copy())
+            current_color += 1
+        
         self.timer.start(1000)
 
     def update_graph(self):
         if self.animation_steps:
-            color, stable_set = self.animation_steps.pop(0)
+            color = self.animation_steps.pop(0)
             self.ax.clear()
             nx.draw_networkx_nodes(
                 self.G,
                 self.pos,
                 ax=self.ax,
                 node_size=700,
-                node_color=["red" if node in stable_set else "skyblue" for node in self.G.nodes()],
+                node_color=[color.get(node, -1) for node in self.G.nodes()],
+                cmap=plt.cm.jet,
                 alpha=0.9,
             )
             nx.draw_networkx_edges(self.G, self.pos, ax=self.ax)
