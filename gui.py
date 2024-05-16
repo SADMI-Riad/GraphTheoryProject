@@ -8,6 +8,7 @@ from graph_operations import redrawGraph, addNode, draw_edge
 from algorithmes.coloration import welch_powell
 from algorithmes.prim import prim_mst
 from algorithmes.Dijkstra import dijkstra
+from Animation_window import AnimationWindow
 
 button_style = """
 QPushButton {
@@ -95,6 +96,10 @@ class GraphDesigner(QMainWindow):
         self.findStableSetButton.clicked.connect(self.findStableSet)
         layout.addWidget(self.findStableSetButton)
 
+        self.animateWelshPowellButton = QPushButton("Animer Welsh-Powell")
+        self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
+        layout.addWidget(self.animateWelshPowellButton)
+
         self.primButton = QPushButton("Exécuter Prim")
         self.primButton.clicked.connect(self.run_prim)
         layout.addWidget(self.primButton)
@@ -117,6 +122,10 @@ class GraphDesigner(QMainWindow):
     def findStableSet(self):
         self.stable_set = welch_powell(self.G)
         redrawGraph(self.ax, self.G, self.pos, self.stable_set, self.canvas)
+
+    def animateWelshPowell(self):
+        self.animation_window = AnimationWindow(self.G, self.pos)
+        self.animation_window.show()
 
     def run_prim(self):
         if not self.G.nodes:

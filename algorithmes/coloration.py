@@ -1,20 +1,16 @@
 import networkx as nx
 
-def welch_powell(graph):
-    sorted_nodes = sorted(graph.nodes(), key=lambda x: -graph.degree(x))
-    colors = {}
-    node_color_map = {}
-
+def welch_powell(G):
+    sorted_nodes = sorted(G.nodes(), key=lambda x: G.degree(x), reverse=True)
+    color = {}
+    max_color = 0
+    
     for node in sorted_nodes:
-        available_colors = {colors[neighbour] for neighbour in graph.neighbors(node) if neighbour in colors}
-        color = 1
-        while color in available_colors:
-            color += 1
-        colors[node] = color
-        if color not in node_color_map:
-            node_color_map[color] = []
-        node_color_map[color].append(node)
+        available_colors = {color[neighbor] for neighbor in G.neighbors(node) if neighbor in color}
+        node_color = next(color for color in range(max_color + 1) if color not in available_colors)
+        color[node] = node_color
+        if node_color == max_color:
+            max_color += 1
 
-    # Rechercher tous les ensembles indépendants et renvoyer celui qui est le plus grand
-    max_stable_set = max(node_color_map.values(), key=len)
-    return max_stable_set
+    stable_set = [node for node, col in color.items() if col == 0]
+    return stable_set
