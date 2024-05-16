@@ -59,6 +59,15 @@ Cette application de théorie des graphes est conçue pour aider les utilisateur
 - `Dijkstra.py` : Implémentation de l'algorithme de Dijkstra pour trouver le plus court chemin.
 - `Animation_window.py` : Contient la classe pour animer l'algorithme de Welsh-Powell.
 
+
+## Exemple d'utilisation
+
+# Creation des sommets et des arcs 
+![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/GraphExemple.png)
+
+# Animation Welsh and Powell Algorithm (Coloration)
+![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/WelshPowell.png)
+
 ## Auteurs
 
 - Sadmi Mohammed Riad
