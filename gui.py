@@ -81,23 +81,38 @@ class GraphDesigner(QMainWindow):
         self.ax.axis("off")
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
+
         self.endNodesCreationButton = QPushButton("Fin création sommets")
         self.endNodesCreationButton.clicked.connect(self.endNodesCreation)
         layout.addWidget(self.endNodesCreationButton)
+
+        self.endEdgesCreationButton = QPushButton("Fin création arcs")
+        self.endEdgesCreationButton.setDisabled(True)
+        self.endEdgesCreationButton.clicked.connect(self.endEdgesCreation)
+        layout.addWidget(self.endEdgesCreationButton)
+
         self.findStableSetButton = QPushButton("Trouver ensemble stable maximal")
         self.findStableSetButton.clicked.connect(self.findStableSet)
         layout.addWidget(self.findStableSetButton)
+
         self.primButton = QPushButton("Exécuter Prim")
         self.primButton.clicked.connect(self.run_prim)
         layout.addWidget(self.primButton)
+
         self.dijkstraButton = QPushButton("Exécuter Dijkstra")
         self.dijkstraButton.clicked.connect(self.run_dijkstra)
         layout.addWidget(self.dijkstraButton)
+
         self.canvas.mpl_connect("button_press_event", self.on_click)
 
     def endNodesCreation(self):
         self.mode = "creating_edges"
         self.endNodesCreationButton.setDisabled(True)
+        self.endEdgesCreationButton.setEnabled(True)
+
+    def endEdgesCreation(self):
+        self.mode = "none"
+        self.endEdgesCreationButton.setDisabled(True)
 
     def findStableSet(self):
         self.stable_set = welch_powell(self.G)
@@ -113,7 +128,6 @@ class GraphDesigner(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_graph)
         self.timer.start(1000)
-
 
     def visualize_step(self, mst):
         self.animation_steps.append(mst)
@@ -134,7 +148,6 @@ class GraphDesigner(QMainWindow):
             self.canvas.draw()
         else:
             self.timer.stop()
-    
 
     def run_dijkstra(self):
         if not self.G.nodes:
