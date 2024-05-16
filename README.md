@@ -63,7 +63,7 @@ Cette application de théorie des graphes est conçue pour aider les utilisateur
 ## Exemple d'utilisation
 
 # Creation des sommets et des arcs 
-![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/GraphExemple.png)
+![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/GraphExemple1.png)
 
 # Animation Welsh and Powell Algorithm (Coloration)
 ![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/WelshPowell.png)
