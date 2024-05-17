@@ -1,10 +1,11 @@
+# graph_designer.py
 import sys
 import os
 import heapq
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QLineEdit, QApplication, QScrollArea
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QLineEdit, QApplication, QScrollArea, QListWidget
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QTimer, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -14,6 +15,7 @@ from algorithmes.prim import prim_mst
 from algorithmes.Dijkstra import dijkstra
 from algorithmes.kruskal_min import kruskal_mst
 from Animation_window import AnimationWindow
+from dijkstra_window import DijkstraWindow
 
 button_style = """
 QPushButton {
@@ -33,22 +35,31 @@ QPushButton:pressed {
 }
 """
 
-USER_DATA_FILE = "user_data.txt"
+import pickle
+
+current_user = None
+
+USER_DATA_FILE = "user_data.pkl"
 
 def load_user_data():
     if not os.path.exists(USER_DATA_FILE):
         return {}
-    with open(USER_DATA_FILE, "r") as file:
-        data = {}
-        for line in file:
-            username, password = line.strip().split(',')
-            data[username] = password
+    with open(USER_DATA_FILE, "rb") as file:
+        data = pickle.load(file)
         return data
 
 def save_user_data(data):
-    with open(USER_DATA_FILE, "w") as file:
-        for username, password in data.items():
-            file.write(f"{username},{password}\n")
+    with open(USER_DATA_FILE, "wb") as file:
+        pickle.dump(data, file)
+
+def get_current_user():
+    global current_user
+    return current_user
+
+def set_current_user(username):
+    global current_user
+    current_user = username
+
 
 mock_database = load_user_data()
 
@@ -58,7 +69,7 @@ class MainMenu(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("Graph Theory App - Login/Register")
+        self.setWindowTitle("Graph Theory App - Main Menu")
         self.setGeometry(100, 100, 400, 300)
         self.setStyleSheet("background-color: #2c3e50; color: white;")
 
@@ -72,26 +83,26 @@ class MainMenu(QMainWindow):
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
-        login_button = QPushButton("Login", self)
-        login_button.setFont(QFont("Arial", 12))
-        login_button.setStyleSheet("background-color: #3498db; color: white;")
-        login_button.clicked.connect(self.show_login)
-        layout.addWidget(login_button)
+        nouveau_graphe_button = QPushButton("Nouveau Graphe", self)
+        nouveau_graphe_button.setFont(QFont("Arial", 12))
+        nouveau_graphe_button.setStyleSheet("background-color: #3498db; color: white;")
+        nouveau_graphe_button.clicked.connect(self.new_graph)
+        layout.addWidget(nouveau_graphe_button)
 
-        register_button = QPushButton("Register", self)
-        register_button.setFont(QFont("Arial", 12))
-        register_button.setStyleSheet("background-color: #e74c3c; color: white;")
-        register_button.clicked.connect(self.show_register)
-        layout.addWidget(register_button)
+        collection_button = QPushButton("Collection", self)
+        collection_button.setFont(QFont("Arial", 12))
+        collection_button.setStyleSheet("background-color: #e74c3c; color: white;")
+        collection_button.clicked.connect(self.show_collection)
+        layout.addWidget(collection_button)
 
-    def show_login(self):
-        self.login_page = LoginPage()
-        self.login_page.show()
+    def new_graph(self):
+        self.graph_designer = GraphDesigner()
+        self.graph_designer.show()
         self.close()
 
-    def show_register(self):
-        self.register_page = RegisterPage()
-        self.register_page.show()
+    def show_collection(self):
+        self.collection_window = CollectionWindow()
+        self.collection_window.show()
         self.close()
 
 class LoginPage(QMainWindow):
@@ -131,15 +142,28 @@ class LoginPage(QMainWindow):
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
 
+        register_button = QPushButton("Register", self)
+        register_button.setFont(QFont("Arial", 12))
+        register_button.setStyleSheet("background-color: #e74c3c; color: white;")
+        register_button.clicked.connect(self.show_register)
+        layout.addWidget(register_button)
+
     def login(self):
         username = self.username_input.text()
         password = self.password_input.text()
-        if username in mock_database and mock_database[username] == password:
-            self.graph_designer = GraphDesigner()
-            self.graph_designer.show()
+        user_data = load_user_data()
+        if username in user_data and user_data[username]["password"] == password:
+            set_current_user(username)
+            self.main_menu = MainMenu()
+            self.main_menu.show()
             self.close()
         else:
             QMessageBox.warning(self, "Error", "Invalid username or password.")
+
+    def show_register(self):
+        self.register_page = RegisterPage()
+        self.register_page.show()
+        self.close()
 
 class RegisterPage(QMainWindow):
     def __init__(self):
@@ -181,11 +205,12 @@ class RegisterPage(QMainWindow):
     def register(self):
         username = self.username_input.text()
         password = self.password_input.text()
-        if username in mock_database:
+        user_data = load_user_data()
+        if username in user_data:
             QMessageBox.warning(self, "Error", "Username already exists. Try logging in instead.")
         else:
-            mock_database[username] = password
-            save_user_data(mock_database)
+            user_data[username] = {"password": password, "graphs": {}}
+            save_user_data(user_data)
             QMessageBox.information(self, "Success", "Registration successful. You can now log in.")
             self.login_page = LoginPage()
             self.login_page.show()
@@ -264,19 +289,18 @@ class GraphDesigner(QMainWindow):
         self.animatePrimButton.clicked.connect(self.animatePrim)
         button_layout.addWidget(self.animatePrimButton)
 
-        self.primButton = QPushButton("Exécuter Prim")
-        self.primButton.setFixedWidth(200)
-        self.primButton.setStyleSheet(button_style)
-        self.primButton.setDisabled(True)
-        self.primButton.clicked.connect(self.run_prim)
-        button_layout.addWidget(self.primButton)
-
-        self.dijkstraButton = QPushButton("Exécuter Dijkstra")
+        self.dijkstraButton = QPushButton("Animer Dijkstra")
         self.dijkstraButton.setFixedWidth(200)
         self.dijkstraButton.setStyleSheet(button_style)
         self.dijkstraButton.setDisabled(True)
-        self.dijkstraButton.clicked.connect(self.run_dijkstra)
+        self.dijkstraButton.clicked.connect(self.animateDijkstra)
         button_layout.addWidget(self.dijkstraButton)
+
+        self.sauvegarderButton = QPushButton("Sauvegarder")
+        self.sauvegarderButton.setFixedWidth(200)
+        self.sauvegarderButton.setStyleSheet(button_style)
+        self.sauvegarderButton.clicked.connect(self.save_graph)
+        button_layout.addWidget(self.sauvegarderButton)
 
         self.deleteNodeButton = QPushButton("Supprimer sommet")
         self.deleteNodeButton.setFixedWidth(200)
@@ -294,6 +318,23 @@ class GraphDesigner(QMainWindow):
         self.canvas.mpl_connect("button_press_event", self.on_click)
 
         button_layout.addStretch()
+
+    def save_graph(self):
+        name, ok = QInputDialog.getText(self, "Sauvegarder le graphe", "Entrez le nom du graphe:")
+        if ok and name:
+            username = get_current_user()
+            user_data = load_user_data()
+            if username in user_data:
+                if len(user_data[username]['graphs']) >= 10:
+                    QMessageBox.warning(self, "Erreur", "Vous ne pouvez pas sauvegarder plus de 10 graphes.")
+                else:
+                    graph_data = {
+                        'G': self.G,
+                        'pos': self.pos
+                    }
+                    user_data[username]['graphs'][name] = graph_data
+                    save_user_data(user_data)
+                    QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
 
     def endNodesCreation(self):
         self.mode = "creating_edges"
@@ -321,6 +362,10 @@ class GraphDesigner(QMainWindow):
     def animatePrim(self):
         start_node = list(self.G.nodes())[0]
         self.animation_window = AnimationWindow(self.G, self.pos, algorithm="prim", start_node=start_node)
+        self.animation_window.show()
+
+    def animateDijkstra(self):
+        self.animation_window = DijkstraWindow(self.G, self.pos)
         self.animation_window.show()
 
     def get_stable_sets_from_colors(self, color_map):
@@ -357,47 +402,16 @@ class GraphDesigner(QMainWindow):
 
         stable_window.show()
 
-    def run_prim(self):
-        if not self.G.nodes:
-            QMessageBox.warning(self, "Erreur", "Aucun nœud présent dans le graphe.")
-            return
-        start_node = list(self.G.nodes())[0]
-        self.animation_steps = []
-        prim_mst(self.G, start_node, self.visualize_step)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_graph)
-        self.timer.start(1000)
-
-    def visualize_step(self, mst):
-        self.animation_steps.append(mst)
-
-    def update_graph(self):
-        if self.animation_steps:
-            mst = self.animation_steps.pop(0)
-            redrawGraph(self.ax, mst, self.pos, [], self.canvas)
-        else:
-            self.timer.stop()
-
-    def run_dijkstra(self):
-        if not self.G.nodes:
-            QMessageBox.warning(self, "Error", "Aucun nœud présent dans le graphe.")
-            return
-        source_node = list(self.G.nodes())[0]
-        path = dijkstra(self.G, source_node)
-        QMessageBox.information(self, "Dijkstra Completed", "Dijkstra's algorithm has completed. Path: " + str(path))
-
     def enableAlgorithmButtons(self):
         self.animateWelshPowellButton.setEnabled(True)
         self.animateKruskalButton.setEnabled(True)
         self.animatePrimButton.setEnabled(True)
-        self.primButton.setEnabled(True)
         self.dijkstraButton.setEnabled(True)
 
     def disableAlgorithmButtons(self):
         self.animateWelshPowellButton.setDisabled(True)
         self.animateKruskalButton.setDisabled(True)
         self.animatePrimButton.setDisabled(True)
-        self.primButton.setDisabled(True)
         self.dijkstraButton.setDisabled(True)
 
     def enableDeleteNodeMode(self):
@@ -466,16 +480,87 @@ class GraphDesigner(QMainWindow):
         ax.text(x + loop_radius, y + loop_radius, str(weight), color='red', fontsize=12, ha='center', va='center')
         canvas.draw()
 
-def redrawGraph(ax, G, pos, labels, canvas):
-    ax.clear()
-    nx.draw(G, pos, ax=ax, with_labels=True, node_color='lightblue', node_size=700, edge_color='gray')
-    for (u, v, d) in G.edges(data=True):
-        if u == v:
-            x, y = pos[u]
-            loop_radius = 0.03
-            loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
-            ax.add_patch(loop)
-            ax.text(x + loop_radius, y + loop_radius, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
-        else:
-            ax.text((pos[u][0] + pos[v][0]) / 2, (pos[u][1] + pos[v][1]) / 2, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
-    canvas.draw()
+    def redraw_graph(self):
+        self.ax.clear()
+        nx.draw(self.G, pos=self.pos, ax=self.ax, with_labels=True, node_color='lightblue', node_size=700, edge_color='gray')
+        for (u, v, d) in self.G.edges(data=True):
+            if u == v:  # handle loop
+                x, y = self.pos[u]
+                loop_radius = 0.03
+                loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
+                self.ax.add_patch(loop)
+                self.ax.text(x + loop_radius, y + loop_radius, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
+            else:
+                self.ax.text((self.pos[u][0] + self.pos[v][0]) / 2, (self.pos[u][1] + self.pos[v][1]) / 2, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
+        self.canvas.draw()
+
+class CollectionWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Graph Collection")
+        self.setGeometry(100, 100, 600, 400)
+        self.setStyleSheet("background-color: #2c3e50; color: white;")
+
+        widget = QWidget(self)
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        title = QLabel("Your Graph Collection", self)
+        title.setFont(QFont("Arial", 16, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        self.graph_list = QListWidget(self)
+        self.graph_list.setFont(QFont("Arial", 12))
+        layout.addWidget(self.graph_list)
+
+        load_button = QPushButton("Load Graph", self)
+        load_button.setFont(QFont("Arial", 12))
+        load_button.setStyleSheet("background-color: #3498db; color: white;")
+        load_button.clicked.connect(self.load_graph)
+        layout.addWidget(load_button)
+
+        delete_button = QPushButton("Delete Graph", self)
+        delete_button.setFont(QFont("Arial", 12))
+        delete_button.setStyleSheet("background-color: #e74c3c; color: white;")
+        delete_button.clicked.connect(self.delete_graph)
+        layout.addWidget(delete_button)
+
+        self.load_graph_list()
+
+    def load_graph_list(self):
+        self.graph_list.clear()
+        username = get_current_user()
+        user_data = load_user_data()
+        if username in user_data:
+            for graph_name in user_data[username]['graphs']:
+                self.graph_list.addItem(graph_name)
+
+    def load_graph(self):
+        selected_graph = self.graph_list.currentItem().text()
+        username = get_current_user()
+        user_data = load_user_data()
+        if selected_graph and username in user_data:
+            graph_data = user_data[username]['graphs'][selected_graph]
+            graph_designer = GraphDesigner()
+            graph_designer.G = graph_data['G']
+            graph_designer.pos = graph_data['pos']
+            graph_designer.redraw_graph()
+            graph_designer.show()
+            self.close()
+
+    def delete_graph(self):
+        selected_graph = self.graph_list.currentItem().text()
+        username = get_current_user()
+        user_data = load_user_data()
+        if selected_graph and username in user_data:
+            del user_data[username]['graphs'][selected_graph]
+            save_user_data(user_data)
+            self.load_graph_list()
+            QMessageBox.information(self, "Success", "Graph deleted successfully.")
+
+

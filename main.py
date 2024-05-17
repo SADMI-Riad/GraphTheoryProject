@@ -1,11 +1,11 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from gui import MainMenu
+from gui import LoginPage
 
 def main():
     app = QApplication(sys.argv)
-    main_menu = MainMenu()
-    main_menu.show()
+    login_page = LoginPage()
+    login_page.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
