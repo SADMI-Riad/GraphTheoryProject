@@ -8,14 +8,14 @@ from algorithmes.coloration import welch_powell
 class AnimationWindow(QMainWindow):
     def __init__(self, G, pos):
         super().__init__()
-        self.G = G.to_undirected()  # Convert directed graph to undirected
+        self.G = G.to_undirected()
         self.pos = pos
         self.initUI()
         self.color_map = welch_powell(self.G)
         self.animation_steps = list(self.color_map.items())
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_graph)
-        self.timer.start(1000)  # Pause for 1 second for each step
+        self.timer.start(1000)
 
     def initUI(self):
         self.setWindowTitle("Animation Welsh-Powell")

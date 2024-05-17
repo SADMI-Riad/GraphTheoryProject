@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QGridLayout, QScrollArea
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QScrollArea
 from PyQt5.QtCore import QTimer
 import matplotlib.pyplot as plt
 from networkx import maximal_independent_set
@@ -16,9 +16,9 @@ QPushButton {
     background-color: white;
     color: black;
     border: 2px solid #555;
-    border-radius: 10px;
+    border-radius: 5px;
     padding: 5px;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: bold;
 }
 QPushButton:hover {
@@ -58,6 +58,8 @@ class MainMenu(QMainWindow):
         self.graph_designer = GraphDesigner()
         self.graph_designer.show()
 
+
+
 class GraphDesigner(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -71,77 +73,111 @@ class GraphDesigner(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle("Graph Designer")
-        self.setGeometry(100, 100, 800, 600)
-        widget = QWidget(self)
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
+        self.setGeometry(100, 100, 1000, 600)
+        
+        main_widget = QWidget(self)
+        self.setCentralWidget(main_widget)
+        
+        main_layout = QHBoxLayout()
+        main_widget.setLayout(main_layout)
+        
+        button_layout = QVBoxLayout()
+        main_layout.addLayout(button_layout)
+        
         self.figure = plt.figure()
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
         self.ax.axis("off")
         self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
-
+        main_layout.addWidget(self.canvas)
+        
         self.endNodesCreationButton = QPushButton("Fin création sommets")
+        self.endNodesCreationButton.setFixedWidth(200)
+        self.endNodesCreationButton.setStyleSheet(button_style)
         self.endNodesCreationButton.clicked.connect(self.endNodesCreation)
-        layout.addWidget(self.endNodesCreationButton)
+        button_layout.addWidget(self.endNodesCreationButton)
 
         self.endEdgesCreationButton = QPushButton("Fin création arcs")
+        self.endEdgesCreationButton.setFixedWidth(200)
+        self.endEdgesCreationButton.setStyleSheet(button_style)
         self.endEdgesCreationButton.setDisabled(True)
         self.endEdgesCreationButton.clicked.connect(self.endEdgesCreation)
-        layout.addWidget(self.endEdgesCreationButton)
+        button_layout.addWidget(self.endEdgesCreationButton)
 
         self.findStableSetButton = QPushButton("Trouver ensemble stable maximal")
+        self.findStableSetButton.setFixedWidth(200)
+        self.findStableSetButton.setStyleSheet(button_style)
         self.findStableSetButton.setDisabled(True)
         self.findStableSetButton.clicked.connect(self.findStableSet)
-        layout.addWidget(self.findStableSetButton)
+        button_layout.addWidget(self.findStableSetButton)
 
         self.animateWelshPowellButton = QPushButton("Animer Welsh-Powell")
+        self.animateWelshPowellButton.setFixedWidth(200)
+        self.animateWelshPowellButton.setStyleSheet(button_style)
         self.animateWelshPowellButton.setDisabled(True)
         self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
-        layout.addWidget(self.animateWelshPowellButton)
+        button_layout.addWidget(self.animateWelshPowellButton)
 
         self.primButton = QPushButton("Exécuter Prim")
+        self.primButton.setFixedWidth(200)
+        self.primButton.setStyleSheet(button_style)
         self.primButton.setDisabled(True)
         self.primButton.clicked.connect(self.run_prim)
-        layout.addWidget(self.primButton)
+        button_layout.addWidget(self.primButton)
 
         self.dijkstraButton = QPushButton("Exécuter Dijkstra")
+        self.dijkstraButton.setFixedWidth(200)
+        self.dijkstraButton.setStyleSheet(button_style)
         self.dijkstraButton.setDisabled(True)
         self.dijkstraButton.clicked.connect(self.run_dijkstra)
-        layout.addWidget(self.dijkstraButton)
+        button_layout.addWidget(self.dijkstraButton)
+        
+        self.deleteNodeButton = QPushButton("Supprimer sommet")
+        self.deleteNodeButton.setFixedWidth(200)
+        self.deleteNodeButton.setStyleSheet(button_style)
+        self.deleteNodeButton.clicked.connect(self.enableDeleteNodeMode)
+        button_layout.addWidget(self.deleteNodeButton)
+
+        self.stopDeletionModeButton = QPushButton("Arrêter le mode suppression")
+        self.stopDeletionModeButton.setFixedWidth(200)
+        self.stopDeletionModeButton.setStyleSheet(button_style)
+        self.stopDeletionModeButton.setDisabled(True)
+        self.stopDeletionModeButton.clicked.connect(self.stopDeleteNodeMode)
+        button_layout.addWidget(self.stopDeletionModeButton)
 
         self.canvas.mpl_connect("button_press_event", self.on_click)
+
+        button_layout.addStretch()
 
     def endNodesCreation(self):
         self.mode = "creating_edges"
         self.endNodesCreationButton.setDisabled(True)
         self.endEdgesCreationButton.setEnabled(True)
+        self.disableAlgorithmButtons()
+        QMessageBox.information(self, "Mode Change", "Switching to edge creation mode.")
 
     def endEdgesCreation(self):
         self.mode = "none"
         self.endEdgesCreationButton.setDisabled(True)
-        self.animateWelshPowellButton.setEnabled(True)
-        self.primButton.setEnabled(True)
-        self.dijkstraButton.setEnabled(True)
+        self.enableAlgorithmButtons()
+        QMessageBox.information(self, "Mode Change", "Edge creation completed.")
 
     def animateWelshPowell(self):
         self.animation_window = AnimationWindow(self.G, self.pos)
         self.animation_window.show()
-        self.stable_sets = self.animation_window.color_map
+        self.stable_sets = self.get_stable_sets_from_colors(self.animation_window.color_map)
         self.findStableSetButton.setEnabled(True)
 
-    def findStableSet(self):
+    def get_stable_sets_from_colors(self, color_map):
         stable_sets = {}
-        for node, color in self.stable_sets.items():
+        for node, color in color_map.items():
             if color not in stable_sets:
                 stable_sets[color] = []
             stable_sets[color].append(node)
+        return stable_sets
 
-        self.stable_sets = stable_sets
-
+    def findStableSet(self):
         self.show_stable_sets()
 
     def show_stable_sets(self):
@@ -184,17 +220,7 @@ class GraphDesigner(QMainWindow):
     def update_graph(self):
         if self.animation_steps:
             mst = self.animation_steps.pop(0)
-            self.ax.clear()
-            nx.draw(
-                mst,
-                pos=self.pos,
-                with_labels=True,
-                ax=self.ax,
-                node_size=700,
-                node_color="lightblue",
-                edge_color="blue",
-            )
-            self.canvas.draw()
+            redrawGraph(self.ax, mst, self.pos, [], self.canvas)
         else:
             self.timer.stop()
 
@@ -206,12 +232,33 @@ class GraphDesigner(QMainWindow):
         path = dijkstra(self.G, source_node)
         QMessageBox.information(self, "Dijkstra Completed", "Dijkstra's algorithm has completed. Path: " + str(path))
 
-    def update_graph(self):
-        if self.animation_steps:
-            mst = self.animation_steps.pop(0)
-            redrawGraph(self.ax, mst, self.pos, [], self.canvas)
-        else:
-            self.timer.stop()
+    def enableAlgorithmButtons(self):
+        self.animateWelshPowellButton.setEnabled(True)
+        self.primButton.setEnabled(True)
+        self.dijkstraButton.setEnabled(True)
+
+    def disableAlgorithmButtons(self):
+        self.animateWelshPowellButton.setDisabled(True)
+        self.primButton.setDisabled(True)
+        self.dijkstraButton.setDisabled(True)
+
+    def enableDeleteNodeMode(self):
+        self.mode = "deleting_nodes"
+        self.deleteNodeButton.setDisabled(True)
+        self.stopDeletionModeButton.setEnabled(True)
+        self.endNodesCreationButton.setDisabled(True)
+        self.endEdgesCreationButton.setDisabled(True)
+        self.disableAlgorithmButtons()
+        QMessageBox.information(self, "Mode Change", "Delete node mode activated. Click on a node to delete it.")
+
+    def stopDeleteNodeMode(self):
+        self.mode = "none"
+        self.deleteNodeButton.setEnabled(True)
+        self.stopDeletionModeButton.setDisabled(True)
+        self.endNodesCreationButton.setEnabled(True)
+        self.endEdgesCreationButton.setEnabled(True)
+        self.enableAlgorithmButtons()
+        QMessageBox.information(self, "Mode Change", "Delete node mode deactivated.")
 
     def on_click(self, event):
         if event.inaxes:
@@ -220,6 +267,8 @@ class GraphDesigner(QMainWindow):
                 addNode(self.G, self.pos, x, y, self.ax, self.canvas)
             elif self.mode == "creating_edges":
                 self.handle_edge_creation(x, y)
+            elif self.mode == "deleting_nodes":
+                self.handle_node_deletion(x, y)
 
     def handle_edge_creation(self, x, y):
         node_id = self.get_closest_node(x, y)
@@ -231,6 +280,14 @@ class GraphDesigner(QMainWindow):
                 self.G.add_edge(self.selected_node_for_edge_creation, node_id, weight=weight)
                 draw_edge(self.ax, self.pos, self.selected_node_for_edge_creation, node_id, weight, self.canvas)
                 self.selected_node_for_edge_creation = None
+
+    def handle_node_deletion(self, x, y):
+        node_id = self.get_closest_node(x, y)
+        confirm = QMessageBox.question(self, "Confirm Deletion", f"Do you confirm you want to delete node {node_id}?", QMessageBox.Yes | QMessageBox.No)
+        if confirm == QMessageBox.Yes:
+            self.G.remove_node(node_id)
+            del self.pos[node_id]
+            redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
 
     def get_closest_node(self, x, y):
         return min(
