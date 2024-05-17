@@ -1,25 +1,19 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QScrollArea
-from PyQt5.QtCore import QTimer
-import matplotlib.pyplot as plt
-from networkx import maximal_independent_set
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, QLineEdit, QMessageBox
-from PyQt5.QtGui import QFont
 import sys
+import os
 import heapq
-from PyQt5.QtWidgets import QApplication
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QLineEdit, QApplication, QScrollArea
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import QTimer, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from graph_operations import redrawGraph, addNode, draw_edge
 from algorithmes.coloration import welch_powell
 from algorithmes.prim import prim_mst
 from algorithmes.Dijkstra import dijkstra
+from algorithmes.kruskal_min import kruskal_mst
 from Animation_window import AnimationWindow
-from PyQt5.QtCore import Qt
-import matplotlib.pyplot as plt
-import os
-
-
 
 button_style = """
 QPushButton {
@@ -38,7 +32,6 @@ QPushButton:pressed {
     background-color: #cccccc;
 }
 """
-
 
 USER_DATA_FILE = "user_data.txt"
 
@@ -257,6 +250,20 @@ class GraphDesigner(QMainWindow):
         self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
         button_layout.addWidget(self.animateWelshPowellButton)
 
+        self.animateKruskalButton = QPushButton("Animer Kruskal")
+        self.animateKruskalButton.setFixedWidth(200)
+        self.animateKruskalButton.setStyleSheet(button_style)
+        self.animateKruskalButton.setDisabled(True)
+        self.animateKruskalButton.clicked.connect(self.animateKruskal)
+        button_layout.addWidget(self.animateKruskalButton)
+
+        self.animatePrimButton = QPushButton("Animer Prim")
+        self.animatePrimButton.setFixedWidth(200)
+        self.animatePrimButton.setStyleSheet(button_style)
+        self.animatePrimButton.setDisabled(True)
+        self.animatePrimButton.clicked.connect(self.animatePrim)
+        button_layout.addWidget(self.animatePrimButton)
+
         self.primButton = QPushButton("Exécuter Prim")
         self.primButton.setFixedWidth(200)
         self.primButton.setStyleSheet(button_style)
@@ -302,10 +309,19 @@ class GraphDesigner(QMainWindow):
         QMessageBox.information(self, "Mode Change", "Edge creation completed.")
 
     def animateWelshPowell(self):
-        self.animation_window = AnimationWindow(self.G, self.pos)
+        self.animation_window = AnimationWindow(self.G, self.pos, algorithm="welsh_powell")
         self.animation_window.show()
         self.stable_sets = self.get_stable_sets_from_colors(self.animation_window.color_map)
         self.findStableSetButton.setEnabled(True)
+
+    def animateKruskal(self):
+        self.animation_window = AnimationWindow(self.G, self.pos, algorithm="kruskal")
+        self.animation_window.show()
+
+    def animatePrim(self):
+        start_node = list(self.G.nodes())[0]
+        self.animation_window = AnimationWindow(self.G, self.pos, algorithm="prim", start_node=start_node)
+        self.animation_window.show()
 
     def get_stable_sets_from_colors(self, color_map):
         stable_sets = {}
@@ -372,11 +388,15 @@ class GraphDesigner(QMainWindow):
 
     def enableAlgorithmButtons(self):
         self.animateWelshPowellButton.setEnabled(True)
+        self.animateKruskalButton.setEnabled(True)
+        self.animatePrimButton.setEnabled(True)
         self.primButton.setEnabled(True)
         self.dijkstraButton.setEnabled(True)
 
     def disableAlgorithmButtons(self):
         self.animateWelshPowellButton.setDisabled(True)
+        self.animateKruskalButton.setDisabled(True)
+        self.animatePrimButton.setDisabled(True)
         self.primButton.setDisabled(True)
         self.dijkstraButton.setDisabled(True)
 
@@ -413,11 +433,17 @@ class GraphDesigner(QMainWindow):
         if self.selected_node_for_edge_creation is None:
             self.selected_node_for_edge_creation = node_id
         else:
-            weight, ok = QInputDialog.getInt(self, "Poids de l'arc", "Entrez le poids de l'arc:", min=1)
-            if ok:
-                self.G.add_edge(self.selected_node_for_edge_creation, node_id, weight=weight)
-                draw_edge(self.ax, self.pos, self.selected_node_for_edge_creation, node_id, weight, self.canvas)
-                self.selected_node_for_edge_creation = None
+            if self.selected_node_for_edge_creation == node_id:
+                weight, ok = QInputDialog.getInt(self, "Poids de la boucle", "Entrez le poids de la boucle:", min=1)
+                if ok:
+                    self.G.add_edge(node_id, node_id, weight=weight)
+                    self.draw_loop(self.ax, self.pos, node_id, weight, self.canvas)
+            else:
+                weight, ok = QInputDialog.getInt(self, "Poids de l'arc", "Entrez le poids de l'arc:", min=1)
+                if ok:
+                    self.G.add_edge(self.selected_node_for_edge_creation, node_id, weight=weight)
+                    draw_edge(self.ax, self.pos, self.selected_node_for_edge_creation, node_id, weight, self.canvas)
+            self.selected_node_for_edge_creation = None
 
     def handle_node_deletion(self, x, y):
         node_id = self.get_closest_node(x, y)
@@ -432,94 +458,24 @@ class GraphDesigner(QMainWindow):
             self.G.nodes, key=lambda n: np.hypot(self.pos[n][0] - x, self.pos[n][1] - y)
         )
 
-class AnimationWindow(QMainWindow):
-    def __init__(self, G, pos):
-        super().__init__()
-        self.G = G.to_undirected()
-        self.pos = pos
-        self.initUI()
-        self.color_map = welch_powell(self.G)
-        self.animation_steps = list(self.color_map.items())
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_graph)
-        self.timer.start(1000)
+    def draw_loop(self, ax, pos, node_id, weight, canvas):
+        x, y = pos[node_id]
+        loop_radius = 0.03
+        loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
+        ax.add_patch(loop)
+        ax.text(x + loop_radius, y + loop_radius, str(weight), color='red', fontsize=12, ha='center', va='center')
+        canvas.draw()
 
-    def initUI(self):
-        self.setWindowTitle("Animation Welsh-Powell")
-        self.setGeometry(150, 150, 800, 600)
-        widget = QWidget(self)
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
-        self.figure = plt.figure()
-        self.ax = self.figure.add_subplot(111)
-        self.ax.set_xlim([0, 1])
-        self.ax.set_ylim([0, 1])
-        self.ax.axis("off")
-        self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
-
-    def update_graph(self):
-        if self.animation_steps:
-            node, color = self.animation_steps.pop(0)
-            print(f"Animating node {node} with color {color}")
-            
-            self.ax.clear()
-            node_colors = [self.color_map.get(n, 'lightgray') for n in self.G.nodes()]
-            nx.draw(self.G, pos=self.pos, ax=self.ax, with_labels=True, node_color=node_colors, node_size=700)
-            self.canvas.draw()
+def redrawGraph(ax, G, pos, labels, canvas):
+    ax.clear()
+    nx.draw(G, pos, ax=ax, with_labels=True, node_color='lightblue', node_size=700, edge_color='gray')
+    for (u, v, d) in G.edges(data=True):
+        if u == v:
+            x, y = pos[u]
+            loop_radius = 0.03
+            loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
+            ax.add_patch(loop)
+            ax.text(x + loop_radius, y + loop_radius, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
         else:
-            self.timer.stop()
-
-def welch_powell(G):
-    degrees = {node: G.degree(node) for node in G.nodes}
-    sorted_nodes = sorted(degrees, key=degrees.get, reverse=True)
-    color_map = {}
-    available_colors = ["red", "blue", "green", "yellow", "purple", "orange"]
-    
-    for current_color_index in range(len(available_colors)):
-        current_color = available_colors[current_color_index]
-        for node in sorted_nodes[:]:
-            if node not in color_map and all(neighbor not in color_map or color_map[neighbor] != current_color for neighbor in G.neighbors(node)):
-                color_map[node] = current_color
-                sorted_nodes.remove(node)
-    return color_map
-
-def prim_mst(graph, start_node, callback=None):
-    undirected_graph = graph.to_undirected()
-    mst = nx.Graph()
-    visited = set([start_node])
-    edges = [(data['weight'], start_node, to) for to, data in undirected_graph[start_node].items()]
-    heapq.heapify(edges)
-
-    while edges:
-        weight, frm, to = heapq.heappop(edges)
-        if to not in visited:
-            visited.add(to)
-            mst.add_edge(frm, to, weight=weight)
-            for next_to, data in undirected_graph[to].items():
-                if next_to not in visited:
-                    heapq.heappush(edges, (data['weight'], to, next_to))
-            if callback:
-                callback(mst.copy())
-    return mst
-
-def dijkstra(graph, source, visualize_step=None):
-    distances = {vertex: float('infinity') for vertex in graph.nodes}
-    previous_nodes = {vertex: None for vertex in graph.nodes}
-    distances[source] = 0
-    pq = [(0, source)]
-
-    while pq:
-        current_distance, current_vertex = heapq.heappop(pq)
-        if visualize_step:
-            visualize_step(graph, current_vertex, distances, previous_nodes)
-        if distances[current_vertex] < current_distance:
-            continue
-        for neighbor, weight in graph[current_vertex].items():
-            distance = current_distance + weight
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                previous_nodes[neighbor] = current_vertex
-                heapq.heappush(pq, (distance, neighbor))
-    return distances, previous_nodes
+            ax.text((pos[u][0] + pos[v][0]) / 2, (pos[u][1] + pos[v][1]) / 2, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
+    canvas.draw()
