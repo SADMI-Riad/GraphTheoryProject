@@ -60,6 +60,36 @@ Cette application de théorie des graphes est conçue pour aider les utilisateur
 - `Animation_window.py` : Contient la classe pour animer l'algorithme de Welsh-Powell.
 
 
+
+# GUI QT5 :
+## Features
+
+- **User Authentication**: Login and Register functionality with user data stored in a text file.
+- **Graph Designer**: Create nodes and edges interactively on a canvas.
+- **Algorithms**:
+  - **Welsh-Powell Coloring**: Animate the process of coloring a graph using the Welsh-Powell algorithm.
+  - **Prim's Algorithm**: Visualize the construction of a Minimum Spanning Tree (MST).
+  - **Dijkstra's Algorithm**: Find the shortest path from a source node.
+
+## Requirements
+
+- Python 3.x
+- PyQt5
+- Matplotlib
+- NetworkX
+- Numpy
+
+## Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/yourusername/graph-theory-app.git
+   cd graph-theory-app
+
+
+
+
 ## Exemple d'utilisation
 
 # Creation des sommets et des arcs 
