@@ -1,22 +1,22 @@
 import networkx as nx
 
 def welch_powell(G):
-    sorted_nodes = sorted(G.nodes(), key=lambda x: G.degree(x), reverse=True)
     
-    color = {}
-    current_color = 0
+    degrees = {node: G.degree(node) for node in G.nodes}
+    print("Degrees:", degrees)
+    sorted_nodes = sorted(degrees, key=degrees.get, reverse=True)
+    color_map = {}
+    available_colors = ["red", "blue", "green", "yellow", "purple", "orange"]
     
-    while sorted_nodes:
-        node = sorted_nodes.pop(0)
-        color[node] = current_color
-        
-        non_adjacent_nodes = [node]
-        for other_node in sorted_nodes[:]:
-            if all(not G.has_edge(other_node, n) for n in non_adjacent_nodes):
-                color[other_node] = current_color
-                non_adjacent_nodes.append(other_node)
-                sorted_nodes.remove(other_node)
-        
-        current_color += 1
-
-    return color
+    for current_color_index in range(len(available_colors)):
+        current_color = available_colors[current_color_index]
+        for node in sorted_nodes[:]:
+            if node not in color_map and all(neighbor not in color_map or color_map[neighbor] != current_color for neighbor in G.neighbors(node)):
+                color_map[node] = current_color
+                sorted_nodes.remove(node)
+    #Debuuuuug
+        print(f"Nodes colored with {current_color}: {[node for node, color in color_map.items() if color == current_color]}")
+    
+    print("Final color map:", color_map)
+    
+    return color_map
