@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QGridLayout, QScrollArea
 from PyQt5.QtCore import QTimer
 import matplotlib.pyplot as plt
 from networkx import maximal_independent_set
@@ -66,7 +66,7 @@ class GraphDesigner(QMainWindow):
         self.selected_node_for_edge_creation = None
         self.G = nx.DiGraph()
         self.pos = {}
-        self.stable_set = []
+        self.stable_sets = {}
         self.animation_steps = []
 
     def initUI(self):
@@ -94,18 +94,22 @@ class GraphDesigner(QMainWindow):
         layout.addWidget(self.endEdgesCreationButton)
 
         self.findStableSetButton = QPushButton("Trouver ensemble stable maximal")
+        self.findStableSetButton.setDisabled(True)
         self.findStableSetButton.clicked.connect(self.findStableSet)
         layout.addWidget(self.findStableSetButton)
 
         self.animateWelshPowellButton = QPushButton("Animer Welsh-Powell")
+        self.animateWelshPowellButton.setDisabled(True)
         self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
         layout.addWidget(self.animateWelshPowellButton)
 
         self.primButton = QPushButton("Exécuter Prim")
+        self.primButton.setDisabled(True)
         self.primButton.clicked.connect(self.run_prim)
         layout.addWidget(self.primButton)
 
         self.dijkstraButton = QPushButton("Exécuter Dijkstra")
+        self.dijkstraButton.setDisabled(True)
         self.dijkstraButton.clicked.connect(self.run_dijkstra)
         layout.addWidget(self.dijkstraButton)
 
@@ -119,14 +123,49 @@ class GraphDesigner(QMainWindow):
     def endEdgesCreation(self):
         self.mode = "none"
         self.endEdgesCreationButton.setDisabled(True)
-
-    def findStableSet(self):
-        self.stable_set = maximal_independent_set(self.G)
-        redrawGraph(self.ax, self.G, self.pos, self.stable_set, self.canvas)
+        self.animateWelshPowellButton.setEnabled(True)
+        self.primButton.setEnabled(True)
+        self.dijkstraButton.setEnabled(True)
 
     def animateWelshPowell(self):
         self.animation_window = AnimationWindow(self.G, self.pos)
         self.animation_window.show()
+        self.stable_sets = self.animation_window.color_map
+        self.findStableSetButton.setEnabled(True)
+
+    def findStableSet(self):
+        stable_sets = {}
+        for node, color in self.stable_sets.items():
+            if color not in stable_sets:
+                stable_sets[color] = []
+            stable_sets[color].append(node)
+
+        self.stable_sets = stable_sets
+
+        self.show_stable_sets()
+
+    def show_stable_sets(self):
+        stable_window = QMainWindow(self)
+        stable_window.setWindowTitle("Stable Sets")
+        stable_window.setGeometry(150, 150, 800, 600)
+        scroll = QScrollArea()
+        widget = QWidget()
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        scroll.setWidget(widget)
+        scroll.setWidgetResizable(True)
+        stable_window.setCentralWidget(scroll)
+
+        for index, (color, nodes) in enumerate(self.stable_sets.items(), start=1):
+            fig, ax = plt.subplots()
+            subgraph = self.G.subgraph(nodes)
+            nx.draw(subgraph, pos=self.pos, ax=ax, with_labels=True, node_color=[color]*len(nodes), node_size=700)
+            canvas = FigureCanvas(fig)
+            layout.addWidget(canvas)
+            stable_label = QLabel(f"Stable {index}")
+            layout.addWidget(stable_label)
+
+        stable_window.show()
 
     def run_prim(self):
         if not self.G.nodes:
