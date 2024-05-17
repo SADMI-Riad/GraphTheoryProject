@@ -2,6 +2,11 @@ from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPus
 from PyQt5.QtCore import QTimer
 import matplotlib.pyplot as plt
 from networkx import maximal_independent_set
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, QLineEdit, QMessageBox
+from PyQt5.QtGui import QFont
+import sys
+import heapq
+from PyQt5.QtWidgets import QApplication
 import numpy as np
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -10,6 +15,11 @@ from algorithmes.coloration import welch_powell
 from algorithmes.prim import prim_mst
 from algorithmes.Dijkstra import dijkstra
 from Animation_window import AnimationWindow
+from PyQt5.QtCore import Qt
+import matplotlib.pyplot as plt
+import os
+
+
 
 button_style = """
 QPushButton {
@@ -29,36 +39,164 @@ QPushButton:pressed {
 }
 """
 
+
+USER_DATA_FILE = "user_data.txt"
+
+def load_user_data():
+    if not os.path.exists(USER_DATA_FILE):
+        return {}
+    with open(USER_DATA_FILE, "r") as file:
+        data = {}
+        for line in file:
+            username, password = line.strip().split(',')
+            data[username] = password
+        return data
+
+def save_user_data(data):
+    with open(USER_DATA_FILE, "w") as file:
+        for username, password in data.items():
+            file.write(f"{username},{password}\n")
+
+mock_database = load_user_data()
+
 class MainMenu(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("Graph Theory App")
-        self.setGeometry(100, 100, 800, 600)
-        self.setFixedSize(800, 600)
-        self.setStyleSheet("background-color: pink;")
+        self.setWindowTitle("Graph Theory App - Login/Register")
+        self.setGeometry(100, 100, 400, 300)
+        self.setStyleSheet("background-color: #2c3e50; color: white;")
 
         widget = QWidget(self)
         layout = QVBoxLayout()
         widget.setLayout(layout)
-        widget.setGeometry(250, 200, 300, 200)
+        self.setCentralWidget(widget)
 
-        menu_label = QPushButton("Menu", widget)
-        menu_label.setStyleSheet("font-size: 24px; font-weight: bold; color: white; background: pink; border: none;")
-        layout.addWidget(menu_label)
+        title = QLabel("Welcome to Graph Theory App", self)
+        title.setFont(QFont("Arial", 16, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
 
-        start_button = QPushButton("Début création du graphe", widget)
-        start_button.setStyleSheet(button_style)
-        start_button.clicked.connect(self.launchGraphDesigner)
-        layout.addWidget(start_button)
+        login_button = QPushButton("Login", self)
+        login_button.setFont(QFont("Arial", 12))
+        login_button.setStyleSheet("background-color: #3498db; color: white;")
+        login_button.clicked.connect(self.show_login)
+        layout.addWidget(login_button)
 
-    def launchGraphDesigner(self):
-        self.graph_designer = GraphDesigner()
-        self.graph_designer.show()
+        register_button = QPushButton("Register", self)
+        register_button.setFont(QFont("Arial", 12))
+        register_button.setStyleSheet("background-color: #e74c3c; color: white;")
+        register_button.clicked.connect(self.show_register)
+        layout.addWidget(register_button)
 
+    def show_login(self):
+        self.login_page = LoginPage()
+        self.login_page.show()
+        self.close()
 
+    def show_register(self):
+        self.register_page = RegisterPage()
+        self.register_page.show()
+        self.close()
+
+class LoginPage(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Login")
+        self.setGeometry(100, 100, 400, 300)
+        self.setStyleSheet("background-color: #2c3e50; color: white;")
+
+        widget = QWidget(self)
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        title = QLabel("Login", self)
+        title.setFont(QFont("Arial", 16, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        self.username_input = QLineEdit(self)
+        self.username_input.setPlaceholderText("Username")
+        self.username_input.setFont(QFont("Arial", 12))
+        layout.addWidget(self.username_input)
+
+        self.password_input = QLineEdit(self)
+        self.password_input.setPlaceholderText("Password")
+        self.password_input.setFont(QFont("Arial", 12))
+        self.password_input.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_input)
+
+        login_button = QPushButton("Login", self)
+        login_button.setFont(QFont("Arial", 12))
+        login_button.setStyleSheet("background-color: #3498db; color: white;")
+        login_button.clicked.connect(self.login)
+        layout.addWidget(login_button)
+
+    def login(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
+        if username in mock_database and mock_database[username] == password:
+            self.graph_designer = GraphDesigner()
+            self.graph_designer.show()
+            self.close()
+        else:
+            QMessageBox.warning(self, "Error", "Invalid username or password.")
+
+class RegisterPage(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Register")
+        self.setGeometry(100, 100, 400, 300)
+        self.setStyleSheet("background-color: #2c3e50; color: white;")
+
+        widget = QWidget(self)
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        title = QLabel("Register", self)
+        title.setFont(QFont("Arial", 16, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        self.username_input = QLineEdit(self)
+        self.username_input.setPlaceholderText("Username")
+        self.username_input.setFont(QFont("Arial", 12))
+        layout.addWidget(self.username_input)
+
+        self.password_input = QLineEdit(self)
+        self.password_input.setPlaceholderText("Password")
+        self.password_input.setFont(QFont("Arial", 12))
+        self.password_input.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_input)
+
+        register_button = QPushButton("Register", self)
+        register_button.setFont(QFont("Arial", 12))
+        register_button.setStyleSheet("background-color: #e74c3c; color: white;")
+        register_button.clicked.connect(self.register)
+        layout.addWidget(register_button)
+
+    def register(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
+        if username in mock_database:
+            QMessageBox.warning(self, "Error", "Username already exists. Try logging in instead.")
+        else:
+            mock_database[username] = password
+            save_user_data(mock_database)
+            QMessageBox.information(self, "Success", "Registration successful. You can now log in.")
+            self.login_page = LoginPage()
+            self.login_page.show()
+            self.close()
 
 class GraphDesigner(QMainWindow):
     def __init__(self):
@@ -74,16 +212,16 @@ class GraphDesigner(QMainWindow):
     def initUI(self):
         self.setWindowTitle("Graph Designer")
         self.setGeometry(100, 100, 1000, 600)
-        
+
         main_widget = QWidget(self)
         self.setCentralWidget(main_widget)
-        
+
         main_layout = QHBoxLayout()
         main_widget.setLayout(main_layout)
-        
+
         button_layout = QVBoxLayout()
         main_layout.addLayout(button_layout)
-        
+
         self.figure = plt.figure()
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlim([0, 1])
@@ -91,7 +229,7 @@ class GraphDesigner(QMainWindow):
         self.ax.axis("off")
         self.canvas = FigureCanvas(self.figure)
         main_layout.addWidget(self.canvas)
-        
+
         self.endNodesCreationButton = QPushButton("Fin création sommets")
         self.endNodesCreationButton.setFixedWidth(200)
         self.endNodesCreationButton.setStyleSheet(button_style)
@@ -132,7 +270,7 @@ class GraphDesigner(QMainWindow):
         self.dijkstraButton.setDisabled(True)
         self.dijkstraButton.clicked.connect(self.run_dijkstra)
         button_layout.addWidget(self.dijkstraButton)
-        
+
         self.deleteNodeButton = QPushButton("Supprimer sommet")
         self.deleteNodeButton.setFixedWidth(200)
         self.deleteNodeButton.setStyleSheet(button_style)
@@ -293,3 +431,95 @@ class GraphDesigner(QMainWindow):
         return min(
             self.G.nodes, key=lambda n: np.hypot(self.pos[n][0] - x, self.pos[n][1] - y)
         )
+
+class AnimationWindow(QMainWindow):
+    def __init__(self, G, pos):
+        super().__init__()
+        self.G = G.to_undirected()
+        self.pos = pos
+        self.initUI()
+        self.color_map = welch_powell(self.G)
+        self.animation_steps = list(self.color_map.items())
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_graph)
+        self.timer.start(1000)
+
+    def initUI(self):
+        self.setWindowTitle("Animation Welsh-Powell")
+        self.setGeometry(150, 150, 800, 600)
+        widget = QWidget(self)
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+        self.figure = plt.figure()
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_xlim([0, 1])
+        self.ax.set_ylim([0, 1])
+        self.ax.axis("off")
+        self.canvas = FigureCanvas(self.figure)
+        layout.addWidget(self.canvas)
+
+    def update_graph(self):
+        if self.animation_steps:
+            node, color = self.animation_steps.pop(0)
+            print(f"Animating node {node} with color {color}")
+            
+            self.ax.clear()
+            node_colors = [self.color_map.get(n, 'lightgray') for n in self.G.nodes()]
+            nx.draw(self.G, pos=self.pos, ax=self.ax, with_labels=True, node_color=node_colors, node_size=700)
+            self.canvas.draw()
+        else:
+            self.timer.stop()
+
+def welch_powell(G):
+    degrees = {node: G.degree(node) for node in G.nodes}
+    sorted_nodes = sorted(degrees, key=degrees.get, reverse=True)
+    color_map = {}
+    available_colors = ["red", "blue", "green", "yellow", "purple", "orange"]
+    
+    for current_color_index in range(len(available_colors)):
+        current_color = available_colors[current_color_index]
+        for node in sorted_nodes[:]:
+            if node not in color_map and all(neighbor not in color_map or color_map[neighbor] != current_color for neighbor in G.neighbors(node)):
+                color_map[node] = current_color
+                sorted_nodes.remove(node)
+    return color_map
+
+def prim_mst(graph, start_node, callback=None):
+    undirected_graph = graph.to_undirected()
+    mst = nx.Graph()
+    visited = set([start_node])
+    edges = [(data['weight'], start_node, to) for to, data in undirected_graph[start_node].items()]
+    heapq.heapify(edges)
+
+    while edges:
+        weight, frm, to = heapq.heappop(edges)
+        if to not in visited:
+            visited.add(to)
+            mst.add_edge(frm, to, weight=weight)
+            for next_to, data in undirected_graph[to].items():
+                if next_to not in visited:
+                    heapq.heappush(edges, (data['weight'], to, next_to))
+            if callback:
+                callback(mst.copy())
+    return mst
+
+def dijkstra(graph, source, visualize_step=None):
+    distances = {vertex: float('infinity') for vertex in graph.nodes}
+    previous_nodes = {vertex: None for vertex in graph.nodes}
+    distances[source] = 0
+    pq = [(0, source)]
+
+    while pq:
+        current_distance, current_vertex = heapq.heappop(pq)
+        if visualize_step:
+            visualize_step(graph, current_vertex, distances, previous_nodes)
+        if distances[current_vertex] < current_distance:
+            continue
+        for neighbor, weight in graph[current_vertex].items():
+            distance = current_distance + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous_nodes[neighbor] = current_vertex
+                heapq.heappush(pq, (distance, neighbor))
+    return distances, previous_nodes
