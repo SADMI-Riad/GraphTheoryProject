@@ -9,6 +9,8 @@ from graph_operations import redrawGraph, addNode, draw_edge
 from algorithmes.coloration import welch_powell
 from algorithmes.prim import prim_mst
 from algorithmes.Dijkstra import dijkstra
+from algorithmes.prim_max import prim_max_mst
+from algorithmes.kruskal_min import kruskal_mst
 from Animation_window import AnimationWindow
 
 button_style = """
@@ -103,10 +105,20 @@ class GraphDesigner(QMainWindow):
         self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
         layout.addWidget(self.animateWelshPowellButton)
 
-        self.primButton = QPushButton("Exécuter Prim")
+        self.primButton = QPushButton("Exécuter Prim pour l'arbre minimum")
         self.primButton.setDisabled(True)
-        self.primButton.clicked.connect(self.run_prim)
+        self.primButton.clicked.connect(lambda: self.run_prim(max_spanning_tree=False))
         layout.addWidget(self.primButton)
+        
+        self.primmaxButton= QPushButton("Exécuter Prim pour l'arbre maximum")
+        self.primmaxButton.setDisabled(True)
+        self.primmaxButton.clicked.connect(lambda: self.run_prim(max_spanning_tree=True))
+        layout.addWidget(self.primmaxButton)
+
+        self.kruskalButton = QPushButton("Exécuter Kruskal pour l'arbre minimum")
+        self.kruskalButton.setDisabled(True)  
+        self.kruskalButton.clicked.connect(self.run_kruskal)
+        layout.addWidget(self.kruskalButton)
 
         self.dijkstraButton = QPushButton("Exécuter Dijkstra")
         self.dijkstraButton.setDisabled(True)
@@ -126,6 +138,8 @@ class GraphDesigner(QMainWindow):
         self.animateWelshPowellButton.setEnabled(True)
         self.primButton.setEnabled(True)
         self.dijkstraButton.setEnabled(True)
+        self.primmaxButton.setEnabled(True)
+        self.kruskalButton.setEnabled(True)
 
     def animateWelshPowell(self):
         self.animation_window = AnimationWindow(self.G, self.pos)
@@ -167,16 +181,32 @@ class GraphDesigner(QMainWindow):
 
         stable_window.show()
 
-    def run_prim(self):
+    def run_prim(self,max_spanning_tree=False):
         if not self.G.nodes:
             QMessageBox.warning(self, "Erreur", "Aucun nœud présent dans le graphe.")
             return
         start_node = list(self.G.nodes())[0]
         self.animation_steps = []
-        prim_mst(self.G, start_node, self.visualize_step)
+        if max_spanning_tree:
+            chosen_prim_algorithm=prim_max_mst
+        else: 
+            chosen_prim_algorithm=prim_mst
+
+        chosen_prim_algorithm(self.G, start_node, self.visualize_step)
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_graph)
         self.timer.start(1000)
+
+    def run_kruskal(self):
+        if not self.G.nodes:
+            QMessageBox.warning(self, "Erreur", "Aucun nœud présent dans le graphe.")
+            return
+        self.animation_steps = []
+        mst = kruskal_mst(self.G,self.visualize_step)
+        self.animation_steps = [mst]  
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_graph)
+        self.timer.start(1000)  
 
     def visualize_step(self, mst):
         self.animation_steps.append(mst)
