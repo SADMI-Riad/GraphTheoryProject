@@ -8,7 +8,11 @@ from PyQt5.QtWidgets import (
     QLabel,
     QGridLayout,
     QScrollArea,
+    QToolButton,
+    QMenu,
+    QAction,
 )
+from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QTimer
 import matplotlib.pyplot as plt
 from networkx import maximal_independent_set
@@ -102,49 +106,95 @@ class GraphDesigner(QMainWindow):
         self.ax.axis("off")
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
-
-        self.endNodesCreationButton = QPushButton("Fin création sommets")
-        self.endNodesCreationButton.clicked.connect(self.endNodesCreation)
-        layout.addWidget(self.endNodesCreationButton)
-
-        self.endEdgesCreationButton = QPushButton("Fin création arcs")
-        self.endEdgesCreationButton.setDisabled(True)
-        self.endEdgesCreationButton.clicked.connect(self.endEdgesCreation)
-        layout.addWidget(self.endEdgesCreationButton)
-
-        self.findStableSetButton = QPushButton("Trouver ensemble stable maximal")
-        self.findStableSetButton.setDisabled(True)
-        self.findStableSetButton.clicked.connect(self.findStableSet)
-        layout.addWidget(self.findStableSetButton)
-
-        self.animateWelshPowellButton = QPushButton("Animer Welsh-Powell")
-        self.animateWelshPowellButton.setDisabled(True)
-        self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
-        layout.addWidget(self.animateWelshPowellButton)
-
-        self.primButton = QPushButton("Exécuter Prim pour l'arbre minimum")
-        self.primButton.setDisabled(True)
-        self.primButton.clicked.connect(lambda: self.run_prim(max_spanning_tree=False))
-        layout.addWidget(self.primButton)
-
-        self.primmaxButton = QPushButton("Exécuter Prim pour l'arbre maximum")
-        self.primmaxButton.setDisabled(True)
-        self.primmaxButton.clicked.connect(
-            lambda: self.run_prim(max_spanning_tree=True)
-        )
-        layout.addWidget(self.primmaxButton)
-
-        self.kruskalButton = QPushButton("Exécuter Kruskal pour l'arbre minimum")
-        self.kruskalButton.setDisabled(True)
-        self.kruskalButton.clicked.connect(self.run_kruskal)
-        layout.addWidget(self.kruskalButton)
-
-        self.dijkstraButton = QPushButton("Exécuter Dijkstra")
-        self.dijkstraButton.setDisabled(True)
-        self.dijkstraButton.clicked.connect(self.run_dijkstra)
-        layout.addWidget(self.dijkstraButton)
-
         self.canvas.mpl_connect("button_press_event", self.on_click)
+        self.endNodesCreationButton = QPushButton(self)
+        self.endEdgesCreationButton = QPushButton(self)
+        self.findStableSetButton = QPushButton(self)
+        self.animateWelshPowellButton = QPushButton(self)
+        self.primButton = QPushButton(self)
+        self.primmaxButton = QPushButton(self)
+        self.kruskalButton = QPushButton(self)
+        self.dijkstraButton = QPushButton(self)
+
+        self.operationsButton = QToolButton(self)
+        self.operationsButton.setStyleSheet(
+            """
+        QToolButton {
+                border: none;
+        }
+        QToolButton::menu-indicator {
+                image: none;
+        }
+        """
+        )
+        self.operationsButton.setText("Opérations")
+        icon = QIcon("icons/menu1.png")
+        self.operationsButton.setIcon(icon)
+        operationsMenu = QMenu(self)
+        self.operationsButton.setMenu(operationsMenu)
+        self.operationsButton.setPopupMode(QToolButton.InstantPopup)
+        layout.addWidget(self.operationsButton)
+
+        self.algorithmsButton = QToolButton(self)
+        self.algorithmsButton.setText("Algorithmes")
+        algorithmsMenu = QMenu(self)
+        self.algorithmsButton.setMenu(algorithmsMenu)
+        self.algorithmsButton.setPopupMode(QToolButton.InstantPopup)
+        layout.addWidget(self.algorithmsButton)
+
+        self.add_action_to_menu(
+            operationsMenu,
+            "Fin création sommets",
+            self.endNodesCreation,
+            self.endNodesCreationButton,
+        )
+        self.add_action_to_menu(
+            operationsMenu,
+            "Fin création arcs",
+            self.endEdgesCreation,
+            self.endEdgesCreationButton,
+        )
+        self.add_action_to_menu(
+            algorithmsMenu,
+            "Trouver ensemble stable maximal",
+            self.findStableSet,
+            self.findStableSetButton,
+        )
+        self.add_action_to_menu(
+            algorithmsMenu,
+            "Animer Welsh-Powell",
+            self.animateWelshPowell,
+            self.animateWelshPowellButton,
+        )
+
+        # Ajout des actions pour les algorithmes
+        self.add_action_to_menu(
+            algorithmsMenu,
+            "Exécuter Prim pour l'arbre minimum",
+            lambda: self.run_prim(False),
+            self.primButton,
+        )
+        self.add_action_to_menu(
+            algorithmsMenu,
+            "Exécuter Prim pour l'arbre maximum",
+            lambda: self.run_prim(True),
+            self.primmaxButton,
+        )
+        self.add_action_to_menu(
+            algorithmsMenu,
+            "Exécuter Kruskal pour l'arbre minimum",
+            self.run_kruskal,
+            self.kruskalButton,
+        )
+        self.add_action_to_menu(
+            algorithmsMenu, "Exécuter Dijkstra", self.run_dijkstra, self.dijkstraButton
+        )
+
+    def add_action_to_menu(self, menu, action_text, action_func, button):
+        action = QAction(action_text, self)
+        action.triggered.connect(action_func)
+        menu.addAction(action)
+        button.setVisible(False)  #
 
     def endNodesCreation(self):
         self.mode = "creating_edges"
@@ -245,11 +295,16 @@ class GraphDesigner(QMainWindow):
         QMessageBox.information(
             self, "Dijkstra", "Cliquez sur le nœud de départ pour Dijkstra."
         )
+
     def perform_dijkstra(self, start_node, end_node):
         try:
-            distances, paths = nx.single_source_dijkstra(self.G, source=start_node, target=end_node, weight='weight')
+            distances, paths = nx.single_source_dijkstra(
+                self.G, source=start_node, target=end_node, weight="weight"
+            )
             path = paths[end_node]
-            self.redraw_graph_with_path(self,path)  # S'assure que cette méthode est aussi définie
+            self.redraw_graph_with_path(
+                self, path
+            )  # S'assure que cette méthode est aussi définie
         except KeyError:
             QMessageBox.warning(self, "Erreur", "Aucun chemin trouvé.")
         except Exception as e:
@@ -260,19 +315,26 @@ class GraphDesigner(QMainWindow):
         pos = nx.spring_layout(self.G)  # Positionne les nœuds
 
         # Dessine tous les nœuds et les arêtes normalement
-        nx.draw_networkx_nodes(self.G, pos, node_color='gray', node_size=300, ax=self.ax)
-        nx.draw_networkx_edges(self.G, pos, edge_color='gray', ax=self.ax)
+        nx.draw_networkx_nodes(
+            self.G, pos, node_color="gray", node_size=300, ax=self.ax
+        )
+        nx.draw_networkx_edges(self.G, pos, edge_color="gray", ax=self.ax)
 
         # Met en évidence le chemin
         path_edges = list(zip(path[:-1], path[1:]))
-        nx.draw_networkx_nodes(self.G, pos, nodelist=path, node_color='blue', node_size=300, ax=self.ax)
-        nx.draw_networkx_edges(self.G, pos, edgelist=path_edges, edge_color='red', width=2, ax=self.ax)
+        nx.draw_networkx_nodes(
+            self.G, pos, nodelist=path, node_color="blue", node_size=300, ax=self.ax
+        )
+        nx.draw_networkx_edges(
+            self.G, pos, edgelist=path_edges, edge_color="red", width=2, ax=self.ax
+        )
 
         # Dessine les étiquettes des nœuds
-        nx.draw_networkx_labels(self.G, pos, ax=self.ax, font_size=12, font_color='white')
+        nx.draw_networkx_labels(
+            self.G, pos, ax=self.ax, font_size=12, font_color="white"
+        )
 
         self.canvas.draw()  # Redessine le canvas
-
 
     # def redraw_graph_with_paths(self, paths):
     #     self.ax.clear()
