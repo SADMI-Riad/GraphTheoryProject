@@ -1,12 +1,15 @@
-# graph_designer.py
 import sys
 import os
 import heapq
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QInputDialog, QLabel, QLineEdit, QApplication, QScrollArea, QListWidget
-from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (
+    QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton,
+    QMessageBox, QInputDialog, QLabel, QLineEdit, QApplication,
+    QScrollArea, QListWidget, QToolButton, QMenu, QAction
+)
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QTimer, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from graph_operations import redrawGraph, addNode, draw_edge
@@ -16,6 +19,7 @@ from algorithmes.Dijkstra import dijkstra
 from algorithmes.kruskal_min import kruskal_mst
 from Animation_window import AnimationWindow
 from dijkstra_window import DijkstraWindow
+import pickle
 
 button_style = """
 QPushButton {
@@ -35,11 +39,20 @@ QPushButton:pressed {
 }
 """
 
-import pickle
-
 current_user = None
 
 USER_DATA_FILE = "user_data.pkl"
+CURRENT_USER_FILE = "current_user.txt"
+
+def save_current_user_to_file(username):
+    with open(CURRENT_USER_FILE, "w") as file:
+        file.write(username)
+
+def load_current_user_from_file():
+    if os.path.exists(CURRENT_USER_FILE):
+        with open(CURRENT_USER_FILE, "r") as file:
+            return file.read().strip()
+    return None
 
 def load_user_data():
     if not os.path.exists(USER_DATA_FILE):
@@ -54,11 +67,18 @@ def save_user_data(data):
 
 def get_current_user():
     global current_user
+    if current_user is None:
+        current_user = load_current_user_from_file()
+    print(f"Getting current user: {current_user}")  # Debug print
     return current_user
 
 def set_current_user(username):
     global current_user
     current_user = username
+    save_current_user_to_file(username)
+    print(f"Setting current user: {current_user}")  # Debug print
+
+
 
 
 mock_database = load_user_data()
@@ -101,6 +121,7 @@ class MainMenu(QMainWindow):
         self.close()
 
     def show_collection(self):
+        from Collection_window import CollectionWindow  # Local import to avoid circular dependency
         self.collection_window = CollectionWindow()
         self.collection_window.show()
         self.close()
@@ -154,6 +175,7 @@ class LoginPage(QMainWindow):
         user_data = load_user_data()
         if username in user_data and user_data[username]["password"] == password:
             set_current_user(username)
+            print(f"Logged in as: {username}")  # Debug print
             self.main_menu = MainMenu()
             self.main_menu.show()
             self.close()
@@ -164,6 +186,7 @@ class LoginPage(QMainWindow):
         self.register_page = RegisterPage()
         self.register_page.show()
         self.close()
+
 
 class RegisterPage(QMainWindow):
     def __init__(self):
@@ -226,6 +249,7 @@ class GraphDesigner(QMainWindow):
         self.pos = {}
         self.stable_sets = {}
         self.animation_steps = []
+        self.animation_windows = []
 
     def initUI(self):
         self.setWindowTitle("Graph Designer")
@@ -248,64 +272,80 @@ class GraphDesigner(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         main_layout.addWidget(self.canvas)
 
-        self.endNodesCreationButton = QPushButton("Fin création sommets")
-        self.endNodesCreationButton.setFixedWidth(200)
-        self.endNodesCreationButton.setStyleSheet(button_style)
-        self.endNodesCreationButton.clicked.connect(self.endNodesCreation)
-        button_layout.addWidget(self.endNodesCreationButton)
+        self.operationsButton = QToolButton(self)
+        self.operationsButton.setStyleSheet(
+            """
+            QToolButton {
+                border: none;
+            }
+            QToolButton::menu-indicator {
+                image: none;
+            }
+            """
+        )
+        self.operationsButton.setText("Opérations")
+        icon = QIcon("icons/menu1.png")
+        self.operationsButton.setIcon(icon)
+        self.operationsMenu = QMenu(self)
+        self.operationsButton.setMenu(self.operationsMenu)
+        self.operationsButton.setPopupMode(QToolButton.InstantPopup)
+        button_layout.addWidget(self.operationsButton)
 
-        self.endEdgesCreationButton = QPushButton("Fin création arcs")
-        self.endEdgesCreationButton.setFixedWidth(200)
-        self.endEdgesCreationButton.setStyleSheet(button_style)
-        self.endEdgesCreationButton.setDisabled(True)
-        self.endEdgesCreationButton.clicked.connect(self.endEdgesCreation)
-        button_layout.addWidget(self.endEdgesCreationButton)
+        self.algorithmsButton = QToolButton(self)
+        self.algorithmsButton.setText("Algorithmes")
+        self.algorithmsMenu = QMenu(self)
+        self.algorithmsButton.setMenu(self.algorithmsMenu)
+        self.algorithmsButton.setPopupMode(QToolButton.InstantPopup)
+        button_layout.addWidget(self.algorithmsButton)
 
-        self.findStableSetButton = QPushButton("Trouver ensemble stable maximal")
-        self.findStableSetButton.setFixedWidth(200)
-        self.findStableSetButton.setStyleSheet(button_style)
-        self.findStableSetButton.setDisabled(True)
-        self.findStableSetButton.clicked.connect(self.findStableSet)
-        button_layout.addWidget(self.findStableSetButton)
-
-        self.animateWelshPowellButton = QPushButton("Animer Welsh-Powell")
-        self.animateWelshPowellButton.setFixedWidth(200)
-        self.animateWelshPowellButton.setStyleSheet(button_style)
-        self.animateWelshPowellButton.setDisabled(True)
-        self.animateWelshPowellButton.clicked.connect(self.animateWelshPowell)
-        button_layout.addWidget(self.animateWelshPowellButton)
-
-        self.animateKruskalButton = QPushButton("Animer Kruskal")
-        self.animateKruskalButton.setFixedWidth(200)
-        self.animateKruskalButton.setStyleSheet(button_style)
-        self.animateKruskalButton.setDisabled(True)
-        self.animateKruskalButton.clicked.connect(self.animateKruskal)
-        button_layout.addWidget(self.animateKruskalButton)
-
-        self.animatePrimButton = QPushButton("Animer Prim")
-        self.animatePrimButton.setFixedWidth(200)
-        self.animatePrimButton.setStyleSheet(button_style)
-        self.animatePrimButton.setDisabled(True)
-        self.animatePrimButton.clicked.connect(self.animatePrim)
-        button_layout.addWidget(self.animatePrimButton)
-
-        self.dijkstraButton = QPushButton("Animer Dijkstra")
-        self.dijkstraButton.setFixedWidth(200)
-        self.dijkstraButton.setStyleSheet(button_style)
-        self.dijkstraButton.setDisabled(True)
-        self.dijkstraButton.clicked.connect(self.animateDijkstra)
-        button_layout.addWidget(self.dijkstraButton)
+        self.add_action_to_menu(
+            self.operationsMenu,
+            "Fin création sommets",
+            self.endNodesCreation,
+        )
+        self.add_action_to_menu(
+            self.operationsMenu,
+            "Fin création arcs",
+            self.endEdgesCreation,
+        )
+        self.add_action_to_menu(
+            self.algorithmsMenu,
+            "Trouver ensemble stable maximal",
+            self.findStableSet,
+        )
+        self.add_action_to_menu(
+            self.algorithmsMenu,
+            "Animer Welsh-Powell",
+            self.animateWelshPowell,
+        )
+        self.add_action_to_menu(
+            self.algorithmsMenu,
+            "Animer Kruskal",
+            self.animateKruskal,
+        )
+        self.add_action_to_menu(
+            self.algorithmsMenu,
+            "Animer Prim",
+            self.animatePrim,
+        )
+        self.add_action_to_menu(
+            self.algorithmsMenu,
+            "Animer Dijkstra",
+            self.animateDijkstra,
+        )
 
         self.sauvegarderButton = QPushButton("Sauvegarder")
         self.sauvegarderButton.setFixedWidth(200)
         self.sauvegarderButton.setStyleSheet(button_style)
         self.sauvegarderButton.clicked.connect(self.save_graph)
+        self.sauvegarderButton.setDisabled(True)
         button_layout.addWidget(self.sauvegarderButton)
 
         self.deleteNodeButton = QPushButton("Supprimer sommet")
         self.deleteNodeButton.setFixedWidth(200)
         self.deleteNodeButton.setStyleSheet(button_style)
         self.deleteNodeButton.clicked.connect(self.enableDeleteNodeMode)
+        self.deleteNodeButton.setDisabled(True)
         button_layout.addWidget(self.deleteNodeButton)
 
         self.stopDeletionModeButton = QPushButton("Arrêter le mode suppression")
@@ -319,54 +359,109 @@ class GraphDesigner(QMainWindow):
 
         button_layout.addStretch()
 
+        # Initially disable all buttons except "Fin création sommets"
+        self.set_initial_button_states()
+
+    def set_initial_button_states(self):
+        self.operationsButton.setEnabled(True)
+        self.algorithmsButton.setDisabled(True)
+        self.sauvegarderButton.setDisabled(True)
+        self.deleteNodeButton.setDisabled(True)
+        self.stopDeletionModeButton.setDisabled(True)
+
+        self.find_menu_action(self.operationsMenu, "Fin création sommets").setEnabled(True)
+        self.find_menu_action(self.operationsMenu, "Fin création arcs").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Trouver ensemble stable maximal").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Prim").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setDisabled(True)
+
+    def find_menu_action(self, menu, action_text):
+        for action in menu.actions():
+            if action.text() == action_text:
+                return action
+        return None
+
+    def add_action_to_menu(self, menu, action_text, action_func):
+        action = QAction(action_text, self)
+        action.triggered.connect(action_func)
+        menu.addAction(action)
+
     def save_graph(self):
         name, ok = QInputDialog.getText(self, "Sauvegarder le graphe", "Entrez le nom du graphe:")
         if ok and name:
             username = get_current_user()
             user_data = load_user_data()
             if username in user_data:
-                if len(user_data[username]['graphs']) >= 10:
-                    QMessageBox.warning(self, "Erreur", "Vous ne pouvez pas sauvegarder plus de 10 graphes.")
+                existing_graphs = user_data[username]['graphs']
+                if name in existing_graphs:
+                    overwrite = QMessageBox.question(
+                        self,
+                        "Graphe Existant",
+                        "Un graphe avec ce nom existe déjà. Voulez-vous l'écraser ?",
+                        QMessageBox.Yes | QMessageBox.No
+                    )
+                    if overwrite == QMessageBox.Yes:
+                        self._save_graph_data(name, user_data)
+                    else:
+                        new_name, ok = QInputDialog.getText(self, "Nouveau Nom", "Entrez le nouveau nom du graphe:")
+                        if ok and new_name:
+                            self._save_graph_data(new_name, user_data)
                 else:
-                    graph_data = {
-                        'G': self.G,
-                        'pos': self.pos
-                    }
-                    user_data[username]['graphs'][name] = graph_data
-                    save_user_data(user_data)
-                    QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
+                    self._save_graph_data(name, user_data)
+                self.sauvegarderButton.setDisabled(True)
+
+    def _save_graph_data(self, name, user_data):
+        username = get_current_user()
+        user_data[username]['graphs'][name] = {
+            'G': self.G,
+            'pos': self.pos
+        }
+        save_user_data(user_data)
+        QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
 
     def endNodesCreation(self):
         self.mode = "creating_edges"
-        self.endNodesCreationButton.setDisabled(True)
-        self.endEdgesCreationButton.setEnabled(True)
-        self.disableAlgorithmButtons()
         QMessageBox.information(self, "Mode Change", "Switching to edge creation mode.")
+        self.find_menu_action(self.operationsMenu, "Fin création sommets").setDisabled(True)
+        self.find_menu_action(self.operationsMenu, "Fin création arcs").setEnabled(True)
 
     def endEdgesCreation(self):
         self.mode = "none"
-        self.endEdgesCreationButton.setDisabled(True)
-        self.enableAlgorithmButtons()
         QMessageBox.information(self, "Mode Change", "Edge creation completed.")
+        self.operationsButton.setEnabled(False)
+        self.algorithmsButton.setEnabled(True)
+        self.sauvegarderButton.setEnabled(True)
+        self.deleteNodeButton.setEnabled(True)
+        self.find_menu_action(self.operationsMenu, "Fin création arcs").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Prim").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setEnabled(True)
 
     def animateWelshPowell(self):
-        self.animation_window = AnimationWindow(self.G, self.pos, algorithm="welsh_powell")
-        self.animation_window.show()
-        self.stable_sets = self.get_stable_sets_from_colors(self.animation_window.color_map)
-        self.findStableSetButton.setEnabled(True)
+        animation_window = AnimationWindow(self.G, self.pos, algorithm="welsh_powell")
+        self.animation_windows.append(animation_window)
+        animation_window.show()
+        self.stable_sets = self.get_stable_sets_from_colors(animation_window.color_map)
+        self.find_menu_action(self.algorithmsMenu, "Trouver ensemble stable maximal").setEnabled(True)
 
     def animateKruskal(self):
-        self.animation_window = AnimationWindow(self.G, self.pos, algorithm="kruskal")
-        self.animation_window.show()
+        animation_window = AnimationWindow(self.G, self.pos, algorithm="kruskal")
+        self.animation_windows.append(animation_window)
+        animation_window.show()
 
     def animatePrim(self):
         start_node = list(self.G.nodes())[0]
-        self.animation_window = AnimationWindow(self.G, self.pos, algorithm="prim", start_node=start_node)
-        self.animation_window.show()
+        animation_window = AnimationWindow(self.G, self.pos, algorithm="prim", start_node=start_node)
+        self.animation_windows.append(animation_window)
+        animation_window.show()
 
     def animateDijkstra(self):
-        self.animation_window = DijkstraWindow(self.G, self.pos)
-        self.animation_window.show()
+        animation_window = DijkstraWindow(self.G, self.pos)
+        self.animation_windows.append(animation_window)
+        animation_window.show()
 
     def get_stable_sets_from_colors(self, color_map):
         stable_sets = {}
@@ -402,34 +497,22 @@ class GraphDesigner(QMainWindow):
 
         stable_window.show()
 
-    def enableAlgorithmButtons(self):
-        self.animateWelshPowellButton.setEnabled(True)
-        self.animateKruskalButton.setEnabled(True)
-        self.animatePrimButton.setEnabled(True)
-        self.dijkstraButton.setEnabled(True)
-
-    def disableAlgorithmButtons(self):
-        self.animateWelshPowellButton.setDisabled(True)
-        self.animateKruskalButton.setDisabled(True)
-        self.animatePrimButton.setDisabled(True)
-        self.dijkstraButton.setDisabled(True)
-
     def enableDeleteNodeMode(self):
         self.mode = "deleting_nodes"
         self.deleteNodeButton.setDisabled(True)
         self.stopDeletionModeButton.setEnabled(True)
-        self.endNodesCreationButton.setDisabled(True)
-        self.endEdgesCreationButton.setDisabled(True)
-        self.disableAlgorithmButtons()
+        self.operationsButton.setDisabled(True)
+        self.algorithmsButton.setDisabled(True)
+        self.sauvegarderButton.setDisabled(True)
         QMessageBox.information(self, "Mode Change", "Delete node mode activated. Click on a node to delete it.")
 
     def stopDeleteNodeMode(self):
         self.mode = "none"
         self.deleteNodeButton.setEnabled(True)
         self.stopDeletionModeButton.setDisabled(True)
-        self.endNodesCreationButton.setEnabled(True)
-        self.endEdgesCreationButton.setEnabled(True)
-        self.enableAlgorithmButtons()
+        self.operationsButton.setEnabled(False)
+        self.algorithmsButton.setEnabled(True)
+        self.sauvegarderButton.setEnabled(False)
         QMessageBox.information(self, "Mode Change", "Delete node mode deactivated.")
 
     def on_click(self, event):
@@ -437,10 +520,13 @@ class GraphDesigner(QMainWindow):
             x, y = event.xdata, event.ydata
             if self.mode == "creating_nodes":
                 addNode(self.G, self.pos, x, y, self.ax, self.canvas)
+                self.sauvegarderButton.setEnabled(True)
             elif self.mode == "creating_edges":
                 self.handle_edge_creation(x, y)
+                self.sauvegarderButton.setEnabled(True)
             elif self.mode == "deleting_nodes":
                 self.handle_node_deletion(x, y)
+                self.sauvegarderButton.setEnabled(True)
 
     def handle_edge_creation(self, x, y):
         node_id = self.get_closest_node(x, y)
@@ -466,6 +552,7 @@ class GraphDesigner(QMainWindow):
             self.G.remove_node(node_id)
             del self.pos[node_id]
             redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
+            self.sauvegarderButton.setEnabled(True)
 
     def get_closest_node(self, x, y):
         return min(
@@ -484,7 +571,7 @@ class GraphDesigner(QMainWindow):
         self.ax.clear()
         nx.draw(self.G, pos=self.pos, ax=self.ax, with_labels=True, node_color='lightblue', node_size=700, edge_color='gray')
         for (u, v, d) in self.G.edges(data=True):
-            if u == v:  # handle loop
+            if u == v:
                 x, y = self.pos[u]
                 loop_radius = 0.03
                 loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
@@ -493,74 +580,3 @@ class GraphDesigner(QMainWindow):
             else:
                 self.ax.text((self.pos[u][0] + self.pos[v][0]) / 2, (self.pos[u][1] + self.pos[v][1]) / 2, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
         self.canvas.draw()
-
-class CollectionWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-
-    def initUI(self):
-        self.setWindowTitle("Graph Collection")
-        self.setGeometry(100, 100, 600, 400)
-        self.setStyleSheet("background-color: #2c3e50; color: white;")
-
-        widget = QWidget(self)
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
-
-        title = QLabel("Your Graph Collection", self)
-        title.setFont(QFont("Arial", 16, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
-
-        self.graph_list = QListWidget(self)
-        self.graph_list.setFont(QFont("Arial", 12))
-        layout.addWidget(self.graph_list)
-
-        load_button = QPushButton("Load Graph", self)
-        load_button.setFont(QFont("Arial", 12))
-        load_button.setStyleSheet("background-color: #3498db; color: white;")
-        load_button.clicked.connect(self.load_graph)
-        layout.addWidget(load_button)
-
-        delete_button = QPushButton("Delete Graph", self)
-        delete_button.setFont(QFont("Arial", 12))
-        delete_button.setStyleSheet("background-color: #e74c3c; color: white;")
-        delete_button.clicked.connect(self.delete_graph)
-        layout.addWidget(delete_button)
-
-        self.load_graph_list()
-
-    def load_graph_list(self):
-        self.graph_list.clear()
-        username = get_current_user()
-        user_data = load_user_data()
-        if username in user_data:
-            for graph_name in user_data[username]['graphs']:
-                self.graph_list.addItem(graph_name)
-
-    def load_graph(self):
-        selected_graph = self.graph_list.currentItem().text()
-        username = get_current_user()
-        user_data = load_user_data()
-        if selected_graph and username in user_data:
-            graph_data = user_data[username]['graphs'][selected_graph]
-            graph_designer = GraphDesigner()
-            graph_designer.G = graph_data['G']
-            graph_designer.pos = graph_data['pos']
-            graph_designer.redraw_graph()
-            graph_designer.show()
-            self.close()
-
-    def delete_graph(self):
-        selected_graph = self.graph_list.currentItem().text()
-        username = get_current_user()
-        user_data = load_user_data()
-        if selected_graph and username in user_data:
-            del user_data[username]['graphs'][selected_graph]
-            save_user_data(user_data)
-            self.load_graph_list()
-            QMessageBox.information(self, "Success", "Graph deleted successfully.")
-
-
