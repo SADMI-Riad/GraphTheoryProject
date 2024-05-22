@@ -16,9 +16,7 @@ class UnionFind:
             self.parent[root1] = root2
 
 def kruskal_mst(graph, callback=None):
-
     undirected_graph = graph.to_undirected()
-
     uf = UnionFind()
     mst = nx.Graph()
 
@@ -39,4 +37,3 @@ def kruskal_mst(graph, callback=None):
                 break
 
     return mst
-
