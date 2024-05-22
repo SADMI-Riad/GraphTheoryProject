@@ -5,21 +5,9 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from PyQt5.QtWidgets import (
-    QMainWindow,
-    QVBoxLayout,
-    QHBoxLayout,
-    QWidget,
-    QPushButton,
-    QMessageBox,
-    QInputDialog,
-    QLabel,
-    QLineEdit,
-    QApplication,
-    QScrollArea,
-    QListWidget,
-    QToolButton,
-    QMenu,
-    QAction,
+    QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton,
+    QMessageBox, QInputDialog, QLabel, QLineEdit, QApplication,
+    QScrollArea, QListWidget, QToolButton, QMenu, QAction
 )
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QTimer, Qt
@@ -56,18 +44,15 @@ current_user = None
 USER_DATA_FILE = "user_data.pkl"
 CURRENT_USER_FILE = "current_user.txt"
 
-
 def save_current_user_to_file(username):
     with open(CURRENT_USER_FILE, "w") as file:
         file.write(username)
-
 
 def load_current_user_from_file():
     if os.path.exists(CURRENT_USER_FILE):
         with open(CURRENT_USER_FILE, "r") as file:
             return file.read().strip()
     return None
-
 
 def load_user_data():
     if not os.path.exists(USER_DATA_FILE):
@@ -76,11 +61,9 @@ def load_user_data():
         data = pickle.load(file)
         return data
 
-
 def save_user_data(data):
     with open(USER_DATA_FILE, "wb") as file:
         pickle.dump(data, file)
-
 
 def get_current_user():
     global current_user
@@ -89,7 +72,6 @@ def get_current_user():
     print(f"Getting current user: {current_user}")  # Debug print
     return current_user
 
-
 def set_current_user(username):
     global current_user
     current_user = username
@@ -97,8 +79,9 @@ def set_current_user(username):
     print(f"Setting current user: {current_user}")  # Debug print
 
 
-mock_database = load_user_data()
 
+
+mock_database = load_user_data()
 
 class MainMenu(QMainWindow):
     def __init__(self):
@@ -138,14 +121,10 @@ class MainMenu(QMainWindow):
         self.close()
 
     def show_collection(self):
-        from Collection_window import (
-            CollectionWindow,
-        )  # Local import to avoid circular dependency
-
+        from Collection_window import CollectionWindow  # Local import to avoid circular dependency
         self.collection_window = CollectionWindow()
         self.collection_window.show()
         self.close()
-
 
 class LoginPage(QMainWindow):
     def __init__(self):
@@ -251,19 +230,14 @@ class RegisterPage(QMainWindow):
         password = self.password_input.text()
         user_data = load_user_data()
         if username in user_data:
-            QMessageBox.warning(
-                self, "Error", "Username already exists. Try logging in instead."
-            )
+            QMessageBox.warning(self, "Error", "Username already exists. Try logging in instead.")
         else:
             user_data[username] = {"password": password, "graphs": {}}
             save_user_data(user_data)
-            QMessageBox.information(
-                self, "Success", "Registration successful. You can now log in."
-            )
+            QMessageBox.information(self, "Success", "Registration successful. You can now log in.")
             self.login_page = LoginPage()
             self.login_page.show()
             self.close()
-
 
 class GraphDesigner(QMainWindow):
     def __init__(self):
@@ -395,18 +369,10 @@ class GraphDesigner(QMainWindow):
         self.deleteNodeButton.setDisabled(True)
         self.stopDeletionModeButton.setDisabled(True)
 
-        self.find_menu_action(self.operationsMenu, "Fin création sommets").setEnabled(
-            True
-        )
-        self.find_menu_action(self.operationsMenu, "Fin création arcs").setDisabled(
-            True
-        )
-        self.find_menu_action(
-            self.algorithmsMenu, "Trouver ensemble stable maximal"
-        ).setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(
-            True
-        )
+        self.find_menu_action(self.operationsMenu, "Fin création sommets").setEnabled(True)
+        self.find_menu_action(self.operationsMenu, "Fin création arcs").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Trouver ensemble stable maximal").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Kruskal").setDisabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Prim").setDisabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setDisabled(True)
@@ -423,27 +389,23 @@ class GraphDesigner(QMainWindow):
         menu.addAction(action)
 
     def save_graph(self):
-        name, ok = QInputDialog.getText(
-            self, "Sauvegarder le graphe", "Entrez le nom du graphe:"
-        )
+        name, ok = QInputDialog.getText(self, "Sauvegarder le graphe", "Entrez le nom du graphe:")
         if ok and name:
             username = get_current_user()
             user_data = load_user_data()
             if username in user_data:
-                existing_graphs = user_data[username]["graphs"]
+                existing_graphs = user_data[username]['graphs']
                 if name in existing_graphs:
                     overwrite = QMessageBox.question(
                         self,
                         "Graphe Existant",
                         "Un graphe avec ce nom existe déjà. Voulez-vous l'écraser ?",
-                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.Yes | QMessageBox.No
                     )
                     if overwrite == QMessageBox.Yes:
                         self._save_graph_data(name, user_data)
                     else:
-                        new_name, ok = QInputDialog.getText(
-                            self, "Nouveau Nom", "Entrez le nouveau nom du graphe:"
-                        )
+                        new_name, ok = QInputDialog.getText(self, "Nouveau Nom", "Entrez le nouveau nom du graphe:")
                         if ok and new_name:
                             self._save_graph_data(new_name, user_data)
                 else:
@@ -452,16 +414,17 @@ class GraphDesigner(QMainWindow):
 
     def _save_graph_data(self, name, user_data):
         username = get_current_user()
-        user_data[username]["graphs"][name] = {"G": self.G, "pos": self.pos}
+        user_data[username]['graphs'][name] = {
+            'G': self.G,
+            'pos': self.pos
+        }
         save_user_data(user_data)
         QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
 
     def endNodesCreation(self):
         self.mode = "creating_edges"
         QMessageBox.information(self, "Mode Change", "Switching to edge creation mode.")
-        self.find_menu_action(self.operationsMenu, "Fin création sommets").setDisabled(
-            True
-        )
+        self.find_menu_action(self.operationsMenu, "Fin création sommets").setDisabled(True)
         self.find_menu_action(self.operationsMenu, "Fin création arcs").setEnabled(True)
 
     def endEdgesCreation(self):
@@ -471,12 +434,8 @@ class GraphDesigner(QMainWindow):
         self.algorithmsButton.setEnabled(True)
         self.sauvegarderButton.setEnabled(True)
         self.deleteNodeButton.setEnabled(True)
-        self.find_menu_action(self.operationsMenu, "Fin création arcs").setDisabled(
-            True
-        )
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(
-            True
-        )
+        self.find_menu_action(self.operationsMenu, "Fin création arcs").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Kruskal").setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Prim").setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setEnabled(True)
@@ -486,9 +445,7 @@ class GraphDesigner(QMainWindow):
         self.animation_windows.append(animation_window)
         animation_window.show()
         self.stable_sets = self.get_stable_sets_from_colors(animation_window.color_map)
-        self.find_menu_action(
-            self.algorithmsMenu, "Trouver ensemble stable maximal"
-        ).setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Trouver ensemble stable maximal").setEnabled(True)
 
     def animateKruskal(self):
         animation_window = AnimationWindow(self.G, self.pos, algorithm="kruskal")
@@ -497,9 +454,7 @@ class GraphDesigner(QMainWindow):
 
     def animatePrim(self):
         start_node = list(self.G.nodes())[0]
-        animation_window = AnimationWindow(
-            self.G, self.pos, algorithm="prim", start_node=start_node
-        )
+        animation_window = AnimationWindow(self.G, self.pos, algorithm="prim", start_node=start_node)
         self.animation_windows.append(animation_window)
         animation_window.show()
 
@@ -534,14 +489,7 @@ class GraphDesigner(QMainWindow):
         for index, (color, nodes) in enumerate(self.stable_sets.items(), start=1):
             fig, ax = plt.subplots()
             subgraph = self.G.subgraph(nodes)
-            nx.draw(
-                subgraph,
-                pos=self.pos,
-                ax=ax,
-                with_labels=True,
-                node_color=[color] * len(nodes),
-                node_size=700,
-            )
+            nx.draw(subgraph, pos=self.pos, ax=ax, with_labels=True, node_color=[color]*len(nodes), node_size=700)
             canvas = FigureCanvas(fig)
             layout.addWidget(canvas)
             stable_label = QLabel(f"Stable {index}")
@@ -556,11 +504,7 @@ class GraphDesigner(QMainWindow):
         self.operationsButton.setDisabled(True)
         self.algorithmsButton.setDisabled(True)
         self.sauvegarderButton.setDisabled(True)
-        QMessageBox.information(
-            self,
-            "Mode Change",
-            "Delete node mode activated. Click on a node to delete it.",
-        )
+        QMessageBox.information(self, "Mode Change", "Delete node mode activated. Click on a node to delete it.")
 
     def stopDeleteNodeMode(self):
         self.mode = "none"
@@ -590,38 +534,20 @@ class GraphDesigner(QMainWindow):
             self.selected_node_for_edge_creation = node_id
         else:
             if self.selected_node_for_edge_creation == node_id:
-                weight, ok = QInputDialog.getInt(
-                    self, "Poids de la boucle", "Entrez le poids de la boucle:", min=1
-                )
+                weight, ok = QInputDialog.getInt(self, "Poids de la boucle", "Entrez le poids de la boucle:", min=1)
                 if ok:
                     self.G.add_edge(node_id, node_id, weight=weight)
                     self.draw_loop(self.ax, self.pos, node_id, weight, self.canvas)
             else:
-                weight, ok = QInputDialog.getInt(
-                    self, "Poids de l'arc", "Entrez le poids de l'arc:", min=1
-                )
+                weight, ok = QInputDialog.getInt(self, "Poids de l'arc", "Entrez le poids de l'arc:", min=1)
                 if ok:
-                    self.G.add_edge(
-                        self.selected_node_for_edge_creation, node_id, weight=weight
-                    )
-                    draw_edge(
-                        self.ax,
-                        self.pos,
-                        self.selected_node_for_edge_creation,
-                        node_id,
-                        weight,
-                        self.canvas,
-                    )
+                    self.G.add_edge(self.selected_node_for_edge_creation, node_id, weight=weight)
+                    draw_edge(self.ax, self.pos, self.selected_node_for_edge_creation, node_id, weight, self.canvas)
             self.selected_node_for_edge_creation = None
 
     def handle_node_deletion(self, x, y):
         node_id = self.get_closest_node(x, y)
-        confirm = QMessageBox.question(
-            self,
-            "Confirm Deletion",
-            f"Do you confirm you want to delete node {node_id}?",
-            QMessageBox.Yes | QMessageBox.No,
-        )
+        confirm = QMessageBox.question(self, "Confirm Deletion", f"Do you confirm you want to delete node {node_id}?", QMessageBox.Yes | QMessageBox.No)
         if confirm == QMessageBox.Yes:
             self.G.remove_node(node_id)
             del self.pos[node_id]
@@ -636,53 +562,21 @@ class GraphDesigner(QMainWindow):
     def draw_loop(self, ax, pos, node_id, weight, canvas):
         x, y = pos[node_id]
         loop_radius = 0.03
-        loop = plt.Circle((x, y), loop_radius, color="black", fill=False)
+        loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
         ax.add_patch(loop)
-        ax.text(
-            x + loop_radius,
-            y + loop_radius,
-            str(weight),
-            color="red",
-            fontsize=12,
-            ha="center",
-            va="center",
-        )
+        ax.text(x + loop_radius, y + loop_radius, str(weight), color='red', fontsize=12, ha='center', va='center')
         canvas.draw()
 
     def redraw_graph(self):
         self.ax.clear()
-        nx.draw(
-            self.G,
-            pos=self.pos,
-            ax=self.ax,
-            with_labels=True,
-            node_color="lightblue",
-            node_size=700,
-            edge_color="gray",
-        )
-        for u, v, d in self.G.edges(data=True):
+        nx.draw(self.G, pos=self.pos, ax=self.ax, with_labels=True, node_color='lightblue', node_size=700, edge_color='gray')
+        for (u, v, d) in self.G.edges(data=True):
             if u == v:
                 x, y = self.pos[u]
                 loop_radius = 0.03
-                loop = plt.Circle((x, y), loop_radius, color="black", fill=False)
+                loop = plt.Circle((x, y), loop_radius, color='black', fill=False)
                 self.ax.add_patch(loop)
-                self.ax.text(
-                    x + loop_radius,
-                    y + loop_radius,
-                    str(d["weight"]),
-                    color="red",
-                    fontsize=12,
-                    ha="center",
-                    va="center",
-                )
+                self.ax.text(x + loop_radius, y + loop_radius, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
             else:
-                self.ax.text(
-                    (self.pos[u][0] + self.pos[v][0]) / 2,
-                    (self.pos[u][1] + self.pos[v][1]) / 2,
-                    str(d["weight"]),
-                    color="red",
-                    fontsize=12,
-                    ha="center",
-                    va="center",
-                )
+                self.ax.text((self.pos[u][0] + self.pos[v][0]) / 2, (self.pos[u][1] + self.pos[v][1]) / 2, str(d['weight']), color='red', fontsize=12, ha='center', va='center')
         self.canvas.draw()

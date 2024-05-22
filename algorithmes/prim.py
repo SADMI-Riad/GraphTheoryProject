@@ -1,39 +1,28 @@
 import networkx as nx
+import heapq
 
-class UnionFind:
-    def __init__(self):
-        self.parent = {}
-
-    def find(self, item):
-        if self.parent[item] != item:
-            self.parent[item] = self.find(self.parent[item])
-        return self.parent[item]
-
-    def union(self, set1, set2):
-        root1 = self.find(set1)
-        root2 = self.find(set2)
-        if root1 != root2:
-            self.parent[root1] = root2
-
-def kruskal_mst(graph, callback=None):
+def prim_mst(graph, start_node, callback=None):
     undirected_graph = graph.to_undirected()
-    uf = UnionFind()
+    #graph faregh to store l'arbre t3na kima rhi mkhdoma
     mst = nx.Graph()
+    #set to track which sommets zednahom lel mst , tbda with the start_node
+    visited = set([start_node])
+    #priority queue where potential arcs ynzado to the mst
+    #its organized b tari9a win les arcs li 3ndhom lowest poids are always at the top
+    edges = [(data['weight'], start_node, to) for to, data in undirected_graph[start_node].items()]
+    heapq.heapify(edges)
 
-    for node in undirected_graph.nodes():
-        uf.parent[node] = node
 
-    edges = list(undirected_graph.edges(data=True))
-    edges.sort(key=lambda x: x[2]['weight'])
-
-    for edge in edges:
-        u, v, weight = edge
-        if uf.find(u) != uf.find(v):
-            uf.union(u, v)
-            mst.add_edge(u, v, weight=weight['weight'])
+    #while loop continue TantQue kayen the arc fel heap
+    while edges:
+        #removes and returns l'arc sghir ge3 (par poids) de l'arbre ,cet arc raho considered for addition to the mst
+        weight, frm, to = heapq.heappop(edges)
+        if to not in visited:
+            visited.add(to)
+            mst.add_edge(frm, to, weight=weight)
+            for next_to, data in undirected_graph[to].items():
+                if next_to not in visited:
+                    heapq.heappush(edges, (data['weight'], to, next_to))
             if callback:
                 callback(mst.copy())
-            if mst.number_of_edges() == undirected_graph.number_of_nodes() - 1:
-                break
-
     return mst
