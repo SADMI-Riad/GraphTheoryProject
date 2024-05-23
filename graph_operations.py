@@ -1,6 +1,8 @@
+from matplotlib import pyplot as plt
 import numpy as np
 import networkx as nx
 from matplotlib.patches import FancyArrowPatch
+
 
 def redrawGraph(ax, G, pos, stable_set, canvas):
     ax.clear()
@@ -20,31 +22,39 @@ def redrawGraph(ax, G, pos, stable_set, canvas):
         draw_edge(ax, pos, node1, node2, data.get("weight", 1), canvas)
     canvas.draw()
 
+
 def addNode(G, pos, x, y, ax, canvas):
     node_id = len(pos) + 1
     pos[node_id] = (x, y)
     G.add_node(node_id)
     redrawGraph(ax, G, pos, [], canvas)
 
+
+from matplotlib.patches import FancyArrowPatch
+
 def draw_edge(ax, pos, node1, node2, weight, canvas):
-    x1, y1 = pos[node1]
-    x2, y2 = pos[node2]
-    rad = 0.3 if node1 == node2 else 0.35
-
     if node1 != node2:
-        arrow = FancyArrowPatch(
-            (x1, y1), (x2, y2), arrowstyle="-|>", color="black", lw=1,
-            connectionstyle=f"arc3,rad={rad}", shrinkA=12, shrinkB=12, mutation_scale=15
-        )
-    else:
-        arrow = FancyArrowPatch(
-            (x1, y1), (x1 + 0.1, y1), arrowstyle="-|>", color="black", lw=1,
-            connectionstyle=f"arc3,rad={rad}", shrinkA=5, shrinkB=5, mutation_scale=15
-        )
+        x1, y1 = pos[node1]
+        x2, y2 = pos[node2]
+        rad = 0.1  # Réglage de la courbure pour un rendu esthétique
 
-    ax.add_patch(arrow)
-    mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
-    offset_x, offset_y = (y2 - y1) * rad * 0.5, (x1 - x2) * rad * 0.5
-    text_x, text_y = mid_x + offset_x, mid_y + offset_y
-    ax.text(text_x, text_y, str(weight), color="red", fontsize=8, ha="center", va="center")
-    canvas.draw()
+        # Création de la flèche
+        arrow = FancyArrowPatch(
+            (x1, y1), (x2, y2),
+            arrowstyle="-|>",
+            color="black",
+            lw=1,
+            connectionstyle=f"arc3,rad={rad}",
+            shrinkA=15,
+            shrinkB=15,
+            mutation_scale=20
+        )
+        ax.add_patch(arrow)
+
+        # Position du texte pour les poids
+        mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
+        offset_x, offset_y = (y2 - y1) * rad * 0.5, (x1 - x2) * rad * 0.5
+        text_x, text_y = mid_x + offset_x, mid_y + offset_y
+        ax.text(text_x, text_y, str(weight), color="darkblue", fontsize=7, ha="center", va="center", backgroundcolor="white")
+
+        canvas.draw()
