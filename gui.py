@@ -66,50 +66,31 @@ QPushButton:disabled {
 
 """
 
-current_user = None
-
-USER_DATA_FILE = "user_data.pkl"
-CURRENT_USER_FILE = "current_user.txt"
-
-
-def save_current_user_to_file(username):
-    with open(CURRENT_USER_FILE, "w") as file:
-        file.write(username)
-
-
-def load_current_user_from_file():
-    if os.path.exists(CURRENT_USER_FILE):
-        with open(CURRENT_USER_FILE, "r") as file:
-            return file.read().strip()
-    return None
 
 
 def load_user_data():
-    if not os.path.exists(USER_DATA_FILE):
+    if not os.path.exists("user_data.pkl"):
         return {}
-    with open(USER_DATA_FILE, "rb") as file:
+    with open("user_data.pkl", "rb") as file:
         data = pickle.load(file)
         return data
 
 
 def save_user_data(data):
-    with open(USER_DATA_FILE, "wb") as file:
+    with open("user_data.pkl", "wb") as file:
         pickle.dump(data, file)
 
 
 def get_current_user():
-    global current_user
-    if current_user is None:
-        current_user = load_current_user_from_file()
-    print(f"Getting current user: {current_user}")  # Debug print
-    return current_user
+    if os.path.exists("current_user.txt"):
+        with open("current_user.txt", "r") as file:
+            return file.read().strip()
+    return None
 
 
 def set_current_user(username):
-    global current_user
-    current_user = username
-    save_current_user_to_file(username)
-    print(f"Setting current user: {current_user}")  # Debug print
+    with open("current_user.txt", "w") as file:
+        file.write(username)
 
 
 mock_database = load_user_data()
@@ -153,10 +134,7 @@ class MainMenu(QMainWindow):
         self.close()
 
     def show_collection(self):
-        from Collection_window import (
-            CollectionWindow,
-        )  # Local import to avoid circular dependency
-
+        from Collection_window import CollectionWindow
         self.collection_window = CollectionWindow()
         self.collection_window.show()
         self.close()
@@ -266,15 +244,11 @@ class RegisterPage(QMainWindow):
         password = self.password_input.text()
         user_data = load_user_data()
         if username in user_data:
-            QMessageBox.warning(
-                self, "Error", "Username already exists. Try logging in instead."
-            )
+            QMessageBox.warning(self, "Error", "Username already exists. Try logging in instead.")
         else:
             user_data[username] = {"password": password, "graphs": {}}
             save_user_data(user_data)
-            QMessageBox.information(
-                self, "Success", "Registration successful. You can now log in."
-            )
+            QMessageBox.information(self, "Success", "Registration successful. You can now log in.")
             self.login_page = LoginPage()
             self.login_page.show()
             self.close()
@@ -518,17 +492,28 @@ class GraphDesigner(QMainWindow):
 
     def _save_graph_data(self, name, user_data):
         username = get_current_user()
-        user_data[username]["graphs"][name] = {"G": self.G, "pos": self.pos}
+        graph_data = {
+            "nodes": list(self.G.nodes()),
+            "edges": list(self.G.edges(data=True)),
+            "positions": {node: (float(pos[0]), float(pos[1])) for node, pos in self.pos.items()},
+        }
+        user_data[username]["graphs"][name] = graph_data
         save_user_data(user_data)
         QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
-
-    # def endNodesCreation(self):
-    #     self.mode = "creating_edges"
-    #     QMessageBox.information(self, "Mode Change", "Switching to edge creation mode.")
-    #     self.find_menu_action(self.operationsMenu, "Fin création sommets").setDisabled(
-    #         True
-    #     )
-    #     self.find_menu_action(self.operationsMenu, "Fin création arcs").setEnabled(True)
+        
+    def load_graph(self, name):
+        username = get_current_user()
+        user_data = load_user_data()
+        if username in user_data and name in user_data[username]["graphs"]:
+            graph_data = user_data[username]["graphs"][name]
+            self.G.clear()
+            self.pos.clear()
+            self.G.add_nodes_from(graph_data["nodes"])
+            self.G.add_edges_from((u, v, d) for u, v, d in graph_data["edges"])
+            self.pos = {node: (pos[0], pos[1]) for node, pos in graph_data["positions"].items()}
+            self.redraw_graph()
+        else:
+            QMessageBox.warning(self, "Erreur", "Le graphe n'existe pas ou n'a pas été trouvé.")
 
     def reset_buttons_states(self):
         self.algorithmsButton.setEnabled(True)
