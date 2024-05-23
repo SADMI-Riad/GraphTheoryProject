@@ -37,20 +37,33 @@ import pickle
 
 button_style = """
 QPushButton {
-    background-color: white;
-    color: black;
-    border: 2px solid #555;
-    border-radius: 5px;
-    padding: 5px;
-    font-size: 12px;
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:1 #e6e6e6);
+    color: #333;
+    border: 1px solid #aaa;
+    border-radius: 10px;
+    padding: 5px 20px;
+    font-size: 14px;
     font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
 }
+
 QPushButton:hover {
-    background-color: #eeeeee;
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #e9e9e9, stop:1 #d9d9d9);
+    border-color: #888;
 }
+
 QPushButton:pressed {
-    background-color: #cccccc;
+    background-color: #d9d9d9;
+    border-color: #666;
 }
+
+QPushButton:disabled {
+    background-color: #f7f7f7;
+    color: #aaa;
+    border-color: #ddd;
+}
+
 """
 
 current_user = None
@@ -300,44 +313,15 @@ class GraphDesigner(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         main_layout.addWidget(self.canvas)
 
-        self.operationsButton = QToolButton(self)
-        self.operationsButton.setStyleSheet(
-            """
-            QToolButton {
-                border: none;
-            }
-            QToolButton::menu-indicator {
-                image: none;
-            }
-            """
-        )
-        # self.operationsButton.setText("Opérations")
-        # icon = QIcon("icons/menu1.png")
-        # self.operationsButton.setIcon(icon)
-        # self.operationsMenu = QMenu(self)
-        # self.operationsButton.setMenu(self.operationsMenu)
-        # self.operationsButton.setPopupMode(QToolButton.InstantPopup)
-        # button_layout.addWidget(self.operationsButton)
-
         self.algorithmsButton = QToolButton(self)
         self.algorithmsButton.setText("Algorithmes")
-        icon = QIcon("icons/menu1.png")
-        self.algorithmsButton.setIcon(icon)
+        self.algorithmsButton.setStyleSheet(button_style)
+        self.algorithmsButton.setFixedWidth(200)
         self.algorithmsMenu = QMenu(self)
         self.algorithmsButton.setMenu(self.algorithmsMenu)
         self.algorithmsButton.setPopupMode(QToolButton.InstantPopup)
         button_layout.addWidget(self.algorithmsButton)
 
-        # self.add_action_to_menu(
-        #     self.operationsMenu,
-        #     "Fin création sommets",
-        #     self.endNodesCreation,
-        # )
-        # self.add_action_to_menu(
-        #     self.operationsMenu,
-        #     "Fin création arcs",
-        #     self.endEdgesCreation,
-        # )
         self.add_action_to_menu(
             self.algorithmsMenu,
             "Animer Welsh-Powell",
@@ -395,12 +379,10 @@ class GraphDesigner(QMainWindow):
         self.stopDeletionModeButton.clicked.connect(self.stopDeleteNodeMode)
         button_layout.addWidget(self.stopDeletionModeButton)
 
-        self.canvas.mpl_connect("button_press_event", self.on_click)
-
-        button_layout.addStretch()
-
         self.set_initial_button_states()
         self.addNodeButton = QPushButton("Add Node", self)
+        self.addNodeButton.setFixedWidth(200)
+        self.addNodeButton.setStyleSheet(button_style)
         self.addNodeButton.setCheckable(True)
         self.addNodeButton.clicked.connect(self.toggle_add_node_mode)
         button_layout.addWidget(self.addNodeButton)
@@ -408,11 +390,15 @@ class GraphDesigner(QMainWindow):
         # Bouton pour ajouter des arcs
         self.addEdgeButton = QPushButton("Add Edge", self)
         self.addEdgeButton.setCheckable(True)
+        self.addEdgeButton.setFixedWidth(200)
+        self.addEdgeButton.setStyleSheet(button_style)
+        self.addEdgeButton.setCheckable(True)
         self.addEdgeButton.clicked.connect(self.toggle_add_edge_mode)
         button_layout.addWidget(self.addEdgeButton)
 
-        # Initialiser les styles des boutons
-        self.update_button_styles()
+        self.canvas.mpl_connect("button_press_event", self.on_click)
+
+        button_layout.addStretch()
 
     def toggle_add_node_mode(self):
         if self.addNodeButton.isChecked():
@@ -436,26 +422,59 @@ class GraphDesigner(QMainWindow):
         self.update_button_styles()
 
     def update_button_styles(self):
+        active_style = """
+        QPushButton {
+                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #b4ec51, stop:1 #429321);
+                color: white;
+                border-color: #5fa837;
+                border: 1px solid #aaa;
+                border-radius: 10px;
+                padding: 5px 20px;
+                font-size: 14px;
+                font-weight: bold;
+                text-align: center;
+                text-transform: uppercase;
+        }
+                QPushButton:hover {
+                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #e9e9e9, stop:1 #d9d9d9);
+                border-color: #899;
+        }
+        QPushButton:pressed {
+                background-color: #d9d9d9;
+                border-color: #670;
+        }
+        """
+
         if self.addNodeButton.isChecked():
-            self.addNodeButton.setStyleSheet("background-color: lightgreen;")
+            self.addNodeButton.setStyleSheet(active_style)
         else:
-            self.addNodeButton.setStyleSheet("")
+            self.addNodeButton.setStyleSheet(button_style)
 
         if self.addEdgeButton.isChecked():
-            self.addEdgeButton.setStyleSheet("background-color: lightgreen;")
+            self.addEdgeButton.setStyleSheet(active_style)
         else:
-            self.addEdgeButton.setStyleSheet("")
+            self.addEdgeButton.setStyleSheet(button_style)
 
     def set_initial_button_states(self):
         self.algorithmsButton.setDisabled(True)
         self.sauvegarderButton.setDisabled(True)
         self.deleteNodeButton.setDisabled(True)
         self.stopDeletionModeButton.setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Max-st").setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Min-st").setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Max-st").setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Min-st").setDisabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(
+            True
+        )
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Kruskal pour Le Max-st"
+        ).setDisabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Kruskal pour Le Min-st"
+        ).setDisabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Prim pour Le Max-st"
+        ).setDisabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Prim pour Le Min-st"
+        ).setDisabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setDisabled(True)
 
     def find_menu_action(self, menu, action_text):
@@ -515,11 +534,21 @@ class GraphDesigner(QMainWindow):
         self.algorithmsButton.setEnabled(True)
         self.sauvegarderButton.setEnabled(True)
         self.deleteNodeButton.setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Max-st").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Min-st").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Max-st").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Min-st").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(
+            True
+        )
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Kruskal pour Le Max-st"
+        ).setEnabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Kruskal pour Le Min-st"
+        ).setEnabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Prim pour Le Max-st"
+        ).setEnabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Prim pour Le Min-st"
+        ).setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setEnabled(True)
 
     def animateWelshPowell(self):
@@ -533,12 +562,12 @@ class GraphDesigner(QMainWindow):
         animation_window = AnimationWindow(self.G, self.pos, algorithm="kruskal")
         self.animation_windows.append(animation_window)
         animation_window.show()
-    
+
     def animateKruskalMax(self):
         animation_window = AnimationWindow(self.G, self.pos, algorithm="kruskalMax")
         self.animation_windows.append(animation_window)
         animation_window.show()
-    
+
     def animatePrim(self):
         start_node = random.choice(list(self.G.nodes()))
         animation_window = AnimationWindow(
@@ -546,13 +575,15 @@ class GraphDesigner(QMainWindow):
         )
         self.animation_windows.append(animation_window)
         animation_window.show()
+
     def animatePrimMax(self):
         start_node = random.choice(list(self.G.nodes()))
-        animation_window= AnimationWindow(
+        animation_window = AnimationWindow(
             self.G, self.pos, algorithm="primMax", start_node=start_node
         )
         self.animation_windows.append(animation_window)
         animation_window.show()
+
     def animateDijkstra(self):
         animation_window = DijkstraWindow(self.G, self.pos)
         self.animation_windows.append(animation_window)
