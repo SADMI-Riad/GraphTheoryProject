@@ -346,11 +346,18 @@ class GraphDesigner(QMainWindow):
         self.deleteNodeButton.setDisabled(True)
         button_layout.addWidget(self.deleteNodeButton)
 
+        self.deleteEdgeButton = QPushButton("Supprimer arc")
+        self.deleteEdgeButton.setFixedWidth(200)
+        self.deleteEdgeButton.setStyleSheet(button_style)
+        self.deleteEdgeButton.clicked.connect(self.enableDeleteEdgeMode)
+        self.deleteEdgeButton.setDisabled(True)
+        button_layout.addWidget(self.deleteEdgeButton)
+
         self.stopDeletionModeButton = QPushButton("Arrêter le mode suppression")
         self.stopDeletionModeButton.setFixedWidth(200)
         self.stopDeletionModeButton.setStyleSheet(button_style)
         self.stopDeletionModeButton.setDisabled(True)
-        self.stopDeletionModeButton.clicked.connect(self.stopDeleteNodeMode)
+        self.stopDeletionModeButton.clicked.connect(self.stopDeleteMode)
         button_layout.addWidget(self.stopDeletionModeButton)
 
         self.set_initial_button_states()
@@ -433,6 +440,7 @@ class GraphDesigner(QMainWindow):
         self.algorithmsButton.setDisabled(True)
         self.sauvegarderButton.setDisabled(True)
         self.deleteNodeButton.setDisabled(True)
+        self.deleteEdgeButton.setDisabled(True)
         self.stopDeletionModeButton.setDisabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(
             True
@@ -519,6 +527,7 @@ class GraphDesigner(QMainWindow):
         self.algorithmsButton.setEnabled(True)
         self.sauvegarderButton.setEnabled(True)
         self.deleteNodeButton.setEnabled(True)
+        self.deleteEdgeButton.setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(
             True
         )
@@ -577,8 +586,8 @@ class GraphDesigner(QMainWindow):
     def enableDeleteNodeMode(self):
         self.mode = "deleting_nodes"
         self.deleteNodeButton.setDisabled(True)
+        self.deleteEdgeButton.setDisabled(True)
         self.stopDeletionModeButton.setEnabled(True)
-        self.operationsButton.setDisabled(True)
         self.algorithmsButton.setDisabled(True)
         self.sauvegarderButton.setDisabled(True)
         QMessageBox.information(
@@ -587,14 +596,27 @@ class GraphDesigner(QMainWindow):
             "Delete node mode activated. Click on a node to delete it.",
         )
 
-    def stopDeleteNodeMode(self):
-        self.mode = "none"
+    def enableDeleteEdgeMode(self):
+        self.mode = "deleting_edges"
+        self.deleteNodeButton.setDisabled(True)
+        self.deleteEdgeButton.setDisabled(True)
+        self.stopDeletionModeButton.setEnabled(True)
+        self.algorithmsButton.setDisabled(True)
+        self.sauvegarderButton.setDisabled(True)
+        QMessageBox.information(
+            self,
+            "Mode Change",
+            "Delete edge mode activated. Click on an edge to delete it.",
+        )
+
+    def stopDeleteMode(self):
+        self.mode = None
         self.deleteNodeButton.setEnabled(True)
+        self.deleteEdgeButton.setEnabled(True)
         self.stopDeletionModeButton.setDisabled(True)
-        self.operationsButton.setEnabled(False)
         self.algorithmsButton.setEnabled(True)
         self.sauvegarderButton.setEnabled(False)
-        QMessageBox.information(self, "Mode Change", "Delete node mode deactivated.")
+        QMessageBox.information(self, "Mode Change", "Delete mode deactivated.")
 
     def on_click(self, event):
         if event.inaxes:
@@ -603,6 +625,10 @@ class GraphDesigner(QMainWindow):
                 addNode(self.G, self.pos, x, y, self.ax, self.canvas)
             elif self.mode == "add_edge":
                 self.handle_edge_creation(x, y)
+            elif self.mode == "deleting_nodes":
+                self.handle_node_deletion(x, y)
+            elif self.mode == "deleting_edges":
+                self.handle_edge_deletion(x, y)
 
     def handle_edge_creation(self, x, y):
         node_id = self.get_closest_node(x, y)
@@ -648,10 +674,50 @@ class GraphDesigner(QMainWindow):
             redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
             self.sauvegarderButton.setEnabled(True)
 
+    def handle_edge_deletion(self, x, y):
+        closest_edge = self.get_closest_edge(x, y)
+        if closest_edge is not None:
+            confirm = QMessageBox.question(
+                self,
+                "Confirm Deletion",
+                f"Do you confirm you want to delete edge {closest_edge}?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            if confirm == QMessageBox.Yes:
+                self.G.remove_edge(*closest_edge)
+                redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
+                self.sauvegarderButton.setEnabled(True)
+
     def get_closest_node(self, x, y):
         return min(
             self.G.nodes, key=lambda n: np.hypot(self.pos[n][0] - x, self.pos[n][1] - y)
         )
+
+    def get_closest_edge(self, x, y):
+        def distance_from_point_to_line(px, py, x1, y1, x2, y2):
+            line_mag = np.hypot(x2 - x1, y2 - y1)
+            u = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / (line_mag ** 2)
+            if u < 0 or u > 1:
+                return min(
+                    np.hypot(px - x1, py - y1),
+                    np.hypot(px - x2, py - y2)
+                )
+            ix = x1 + u * (x2 - x1)
+            iy = y1 + u * (y2 - y1)
+            return np.hypot(px - ix, py - iy)
+
+        closest_edge = min(
+            self.G.edges, 
+            key=lambda e: distance_from_point_to_line(
+                x, y, self.pos[e[0]][0], self.pos[e[0]][1], self.pos[e[1]][0], self.pos[e[1]][1]
+            )
+        )
+        distance = distance_from_point_to_line(
+            x, y, self.pos[closest_edge[0]][0], self.pos[closest_edge[0]][1], self.pos[closest_edge[1]][0], self.pos[closest_edge[1]][1]
+        )
+        if distance < 0.05:  # Adjust the threshold as needed
+            return closest_edge
+        return None
 
     def draw_loop(self, ax, pos, node_id, weight, canvas):
         x, y = pos[node_id]
