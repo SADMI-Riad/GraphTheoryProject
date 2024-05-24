@@ -14,6 +14,7 @@ from algorithmes.coloration import welch_powell
 from algorithmes.kruskal_min import kruskal_mst
 from algorithmes.prim import prim_mst
 from algorithmes.prim_max import prim_max_mst
+from algorithmes.kruksal_max import kruskal_max_mst
 
 
 class AnimationWindow(QMainWindow):
@@ -33,7 +34,6 @@ class AnimationWindow(QMainWindow):
             self.button = QPushButton("Trouver ensemble stable maximal", self)
             self.button.clicked.connect(self.findStableSet)
             layout = QVBoxLayout()
-            layout.addWidget(self.button)
             self.setLayout(layout)
 
         elif algorithm == "kruskal":
@@ -56,7 +56,7 @@ class AnimationWindow(QMainWindow):
             self.timer.start(1000)
         elif algorithm == "kruskalMax":
             self.animation_steps = []
-            kruskal_mst(self.G, self.visualize_step_kruskal)
+            kruskal_max_mst(self.G, self.visualize_step_kruskal)
             self.timer = QTimer()
             self.timer.timeout.connect(self.update_graph_kruskal)
             self.timer.start(1000)

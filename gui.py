@@ -1,6 +1,5 @@
-import sys
 import os
-import heapq
+import sys
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -14,22 +13,16 @@ from PyQt5.QtWidgets import (
     QInputDialog,
     QLabel,
     QLineEdit,
-    QApplication,
-    QScrollArea,
-    QListWidget,
     QToolButton,
     QMenu,
     QAction,
+    QApplication
 )
 import random
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from graph_operations import redrawGraph, addNode, draw_edge
-from algorithmes.coloration import welch_powell
-from algorithmes.prim import prim_mst
-from algorithmes.Dijkstra import dijkstra
-from algorithmes.kruskal_min import kruskal_mst
 from bellman_ford_window import BellmanFordWindow
 from Animation_window import AnimationWindow
 from dijkstra_window import DijkstraWindow
@@ -66,6 +59,7 @@ QPushButton:disabled {
 
 """
 
+
 def load_user_data():
     if not os.path.exists("user_data.pkl"):
         return {}
@@ -88,7 +82,7 @@ def get_current_user():
 
 def set_current_user(username):
     with open("current_user.txt", "w") as file:
-        file.write(username)
+        file.write(username if username is not None else "")
 
 
 mock_database = load_user_data()
@@ -133,6 +127,7 @@ class MainMenu(QMainWindow):
 
     def show_collection(self):
         from Collection_window import CollectionWindow
+
         self.collection_window = CollectionWindow()
         self.collection_window.show()
         self.close()
@@ -153,29 +148,29 @@ class LoginPage(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        title = QLabel("Login", self)
+        title = QLabel("Se connecter", self)
         title.setFont(QFont("Arial", 16, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
         self.username_input = QLineEdit(self)
-        self.username_input.setPlaceholderText("Username")
+        self.username_input.setPlaceholderText("Nom d'utilisateur :")
         self.username_input.setFont(QFont("Arial", 12))
         layout.addWidget(self.username_input)
 
         self.password_input = QLineEdit(self)
-        self.password_input.setPlaceholderText("Password")
+        self.password_input.setPlaceholderText("Mote de passe :")
         self.password_input.setFont(QFont("Arial", 12))
         self.password_input.setEchoMode(QLineEdit.Password)
         layout.addWidget(self.password_input)
 
-        login_button = QPushButton("Login", self)
+        login_button = QPushButton("Se connecter", self)
         login_button.setFont(QFont("Arial", 12))
         login_button.setStyleSheet("background-color: #3498db; color: white;")
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
 
-        register_button = QPushButton("Register", self)
+        register_button = QPushButton("S'inscrire", self)
         register_button.setFont(QFont("Arial", 12))
         register_button.setStyleSheet("background-color: #e74c3c; color: white;")
         register_button.clicked.connect(self.show_register)
@@ -192,7 +187,9 @@ class LoginPage(QMainWindow):
             self.main_menu.show()
             self.close()
         else:
-            QMessageBox.warning(self, "Error", "Invalid username or password.")
+            QMessageBox.warning(
+                self, "Erreur", "Invalide Nom-d'utilisateur ou mote de passe."
+            )
 
     def show_register(self):
         self.register_page = RegisterPage()
@@ -215,23 +212,23 @@ class RegisterPage(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        title = QLabel("Register", self)
+        title = QLabel("S'inscrire", self)
         title.setFont(QFont("Arial", 16, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
         self.username_input = QLineEdit(self)
-        self.username_input.setPlaceholderText("Username")
+        self.username_input.setPlaceholderText("Nom d'utilisateur :")
         self.username_input.setFont(QFont("Arial", 12))
         layout.addWidget(self.username_input)
 
         self.password_input = QLineEdit(self)
-        self.password_input.setPlaceholderText("Password")
+        self.password_input.setPlaceholderText("Mote de passe :")
         self.password_input.setFont(QFont("Arial", 12))
         self.password_input.setEchoMode(QLineEdit.Password)
         layout.addWidget(self.password_input)
 
-        register_button = QPushButton("Register", self)
+        register_button = QPushButton("S'inscrire", self)
         register_button.setFont(QFont("Arial", 12))
         register_button.setStyleSheet("background-color: #e74c3c; color: white;")
         register_button.clicked.connect(self.register)
@@ -242,11 +239,19 @@ class RegisterPage(QMainWindow):
         password = self.password_input.text()
         user_data = load_user_data()
         if username in user_data:
-            QMessageBox.warning(self, "Error", "Username already exists. Try logging in instead.")
+            QMessageBox.warning(
+                self,
+                "Erreur",
+                "Nom d'utilisateur existe deja. Essayez plutôt de vous connecter.",
+            )
         else:
             user_data[username] = {"password": password, "graphs": {}}
             save_user_data(user_data)
-            QMessageBox.information(self, "Success", "Registration successful. You can now log in.")
+            QMessageBox.information(
+                self,
+                "Succès",
+                "Inscription réussie. Vous pouvez maintenant vous connecter.",
+            )
             self.login_page = LoginPage()
             self.login_page.show()
             self.close()
@@ -265,8 +270,6 @@ class GraphDesigner(QMainWindow):
         self.animation_steps = []
         self.animation_windows = []
         self.node_counter = 1  # Initialize the node counter
-
-
 
     def initUI(self):
         self.setWindowTitle("Graph Designer")
@@ -341,14 +344,14 @@ class GraphDesigner(QMainWindow):
         self.sauvegarderButton.setDisabled(True)
         button_layout.addWidget(self.sauvegarderButton)
 
-        self.addNodeButton = QPushButton("Add Node", self)
+        self.addNodeButton = QPushButton("Ajouter sommet", self)
         self.addNodeButton.setFixedWidth(200)
         self.addNodeButton.setStyleSheet(button_style)
         self.addNodeButton.setCheckable(True)
         self.addNodeButton.clicked.connect(self.toggle_add_node_mode)
         button_layout.addWidget(self.addNodeButton)
 
-        self.addEdgeButton = QPushButton("Add Edge", self)
+        self.addEdgeButton = QPushButton("Ajouter arc", self)
         self.addEdgeButton.setCheckable(True)
         self.addEdgeButton.setFixedWidth(200)
         self.addEdgeButton.setStyleSheet(button_style)
@@ -369,6 +372,18 @@ class GraphDesigner(QMainWindow):
         self.deleteEdgeButton.setStyleSheet(button_style)
         self.deleteEdgeButton.clicked.connect(self.toggle_delete_edge_mode)
         button_layout.addWidget(self.deleteEdgeButton)
+        
+        self.mainMenuButton = QPushButton("Menu Principal", self)
+        self.mainMenuButton.setStyleSheet(button_style)
+        self.mainMenuButton.setFixedWidth(200)
+        self.mainMenuButton.clicked.connect(self.openMainMenu)
+        button_layout.addWidget(self.mainMenuButton)
+
+        self.logoutButton = QPushButton("Déconnexion", self)
+        self.logoutButton.setStyleSheet(button_style)
+        self.logoutButton.setFixedWidth(200)
+        self.logoutButton.clicked.connect(self.logout)
+        button_layout.addWidget(self.logoutButton)
 
         self.canvas.mpl_connect("button_press_event", self.on_click)
 
@@ -396,7 +411,6 @@ class GraphDesigner(QMainWindow):
             self.mode = None
         self.update_button_styles()
 
-
     def toggle_delete_node_mode(self):
         if self.deleteNodeButton.isChecked():
             self.mode = "deleting_nodes"
@@ -416,7 +430,6 @@ class GraphDesigner(QMainWindow):
         else:
             self.mode = None
         self.update_button_styles()
-
 
     def update_button_styles(self):
         active_style = """
@@ -442,7 +455,12 @@ class GraphDesigner(QMainWindow):
         }
         """
 
-        buttons = [self.addNodeButton, self.addEdgeButton, self.deleteNodeButton, self.deleteEdgeButton]
+        buttons = [
+            self.addNodeButton,
+            self.addEdgeButton,
+            self.deleteNodeButton,
+            self.deleteEdgeButton,
+        ]
 
         for button in buttons:
             if button.isChecked():
@@ -472,7 +490,6 @@ class GraphDesigner(QMainWindow):
         self.deleteEdgeButton.setDisabled(True)
         self.sauvegarderButton.setDisabled(True)
         self.algorithmsButton.setDisabled(True)
-
 
     def find_menu_action(self, menu, action_text):
         for action in menu.actions():
@@ -513,19 +530,19 @@ class GraphDesigner(QMainWindow):
                     self._save_graph_data(name, user_data)
                 self.sauvegarderButton.setDisabled(True)
 
-
     def _save_graph_data(self, name, user_data):
         username = get_current_user()
         graph_data = {
             "nodes": list(self.G.nodes()),
             "edges": list(self.G.edges(data=True)),
-            "positions": {node: (float(pos[0]), float(pos[1])) for node, pos in self.pos.items()},
-            "node_counter": self.node_counter
+            "positions": {
+                node: (float(pos[0]), float(pos[1])) for node, pos in self.pos.items()
+            },
+            "node_counter": self.node_counter,
         }
         user_data[username]["graphs"][name] = graph_data
         save_user_data(user_data)
         QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
-
 
     def load_graph(self, name):
         username = get_current_user()
@@ -536,23 +553,38 @@ class GraphDesigner(QMainWindow):
             self.pos.clear()
             self.G.add_nodes_from(graph_data["nodes"])
             self.G.add_edges_from((u, v, d) for u, v, d in graph_data["edges"])
-            self.pos = {node: (pos[0], pos[1]) for node, pos in graph_data["positions"].items()}
-            self.node_counter = graph_data.get("node_counter", max(graph_data["nodes"]) + 1)  # Restore the node counter
+            self.pos = {
+                node: (pos[0], pos[1]) for node, pos in graph_data["positions"].items()
+            }
+            self.node_counter = graph_data.get(
+                "node_counter", max(graph_data["nodes"]) + 1
+            )  # Restore the node counter
             self.redraw_graph()
         else:
-            QMessageBox.warning(self, "Erreur", "Le graphe n'existe pas ou n'a pas été trouvé.")
-
+            QMessageBox.warning(
+                self, "Erreur", "Le graphe n'existe pas ou n'a pas été trouvé."
+            )
 
     def reset_buttons_states(self):
         self.algorithmsButton.setEnabled(True)
         self.sauvegarderButton.setEnabled(True)
         self.deleteNodeButton.setEnabled(True)
         self.deleteEdgeButton.setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Max-st").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Min-st").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Max-st").setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Min-st").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(
+            True
+        )
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Kruskal pour Le Max-st"
+        ).setEnabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Kruskal pour Le Min-st"
+        ).setEnabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Prim pour Le Max-st"
+        ).setEnabled(True)
+        self.find_menu_action(
+            self.algorithmsMenu, "Animer Prim pour Le Min-st"
+        ).setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setEnabled(True)
 
     def animateWelshPowell(self):
@@ -619,7 +651,6 @@ class GraphDesigner(QMainWindow):
             elif self.mode == "deleting_edges":
                 self.handle_edge_deletion(x, y)
 
-
     def handle_edge_creation(self, x, y):
         node_id = self.get_closest_node(x, y)
         if self.selected_node_for_edge_creation is None:
@@ -666,7 +697,6 @@ class GraphDesigner(QMainWindow):
             self.mode = None
             self.update_button_styles()
 
-
     def handle_edge_deletion(self, x, y):
         closest_edge = self.get_closest_edge(x, y)
         if closest_edge is not None:
@@ -691,24 +721,31 @@ class GraphDesigner(QMainWindow):
     def get_closest_edge(self, x, y):
         def distance_from_point_to_line(px, py, x1, y1, x2, y2):
             line_mag = np.hypot(x2 - x1, y2 - y1)
-            u = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / (line_mag ** 2)
+            u = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / (line_mag**2)
             if u < 0 or u > 1:
-                return min(
-                    np.hypot(px - x1, py - y1),
-                    np.hypot(px - x2, py - y2)
-                )
+                return min(np.hypot(px - x1, py - y1), np.hypot(px - x2, py - y2))
             ix = x1 + u * (x2 - x1)
             iy = y1 + u * (y2 - y1)
             return np.hypot(px - ix, py - iy)
 
         closest_edge = min(
-            self.G.edges, 
+            self.G.edges,
             key=lambda e: distance_from_point_to_line(
-                x, y, self.pos[e[0]][0], self.pos[e[0]][1], self.pos[e[1]][0], self.pos[e[1]][1]
-            )
+                x,
+                y,
+                self.pos[e[0]][0],
+                self.pos[e[0]][1],
+                self.pos[e[1]][0],
+                self.pos[e[1]][1],
+            ),
         )
         distance = distance_from_point_to_line(
-            x, y, self.pos[closest_edge[0]][0], self.pos[closest_edge[0]][1], self.pos[closest_edge[1]][0], self.pos[closest_edge[1]][1]
+            x,
+            y,
+            self.pos[closest_edge[0]][0],
+            self.pos[closest_edge[0]][1],
+            self.pos[closest_edge[1]][0],
+            self.pos[closest_edge[1]][1],
         )
         if distance < 0.05:  # Adjust the threshold as needed
             return closest_edge
@@ -788,3 +825,15 @@ class GraphDesigner(QMainWindow):
             )  # Gardez une référence pour éviter la fermeture prématurée
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Une erreur s'est produite: {str(e)}")
+
+    def openMainMenu(self):
+        self.main_menu = MainMenu()
+        self.main_menu.show()
+        self.close()
+        
+    def logout(self):
+        set_current_user(None)  # Effacer l'utilisateur actuel 
+        app = QApplication(sys.argv)
+        login_page = LoginPage()
+        login_page.show()
+        sys.exit(app.exec_())

@@ -2,8 +2,6 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
     QWidget,
-    QLabel,
-    QComboBox,
     QPushButton,
     QMessageBox,
 )
@@ -41,7 +39,7 @@ class DijkstraWindow(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
 
-        self.reset_button = QPushButton("Reset", self)
+        self.reset_button = QPushButton("Recommencer", self)
         self.reset_button.clicked.connect(self.reset)
         layout.addWidget(self.reset_button)
 
@@ -63,8 +61,8 @@ class DijkstraWindow(QMainWindow):
         else:
             QMessageBox.warning(
                 self,
-                "Warning",
-                "Please select both source and target nodes before running Dijkstra.",
+                "Attention",
+                "Veuillez sélectionner à la fois les nœuds source et cible avant d'exécuter Dijkstra.",
             )
 
     def dijkstra(self, graph, source, visualize_step=None):
@@ -202,7 +200,7 @@ class DijkstraWindow(QMainWindow):
         if path[0] == source:
             return path
         else:
-            QMessageBox.warning(self, "Error", "No path found from source to target.")
+            QMessageBox.warning(self, "Erreur", "Aucun chemin trouvé de la source à la cible.")
             return []
 
     def on_click_djik(self, event):
@@ -220,7 +218,7 @@ class DijkstraWindow(QMainWindow):
         elif not self.target_node and self.source_node != closest_node:
             self.target_node = closest_node
             self.highlight_node(self.target_node, "red")
-            self.run_dijkstra() 
+            self.run_dijkstra()
 
     def highlight_node(self, node, color):
         nx.draw_networkx_nodes(

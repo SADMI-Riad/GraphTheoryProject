@@ -1,8 +1,12 @@
+import sys
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QMessageBox
 from PyQt5.QtCore import QTimer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
+
+from algorithmes.bellman_ford import bellman_ford
 
 class BellmanFordWindow(QMainWindow):
     def __init__(self, G, pos):
@@ -33,51 +37,44 @@ class BellmanFordWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_visual)
 
+        self.canvas.mpl_connect("button_press_event", self.on_click_bellman_ford)
+        self.draw_graph()
+
     def start_bellman_ford(self):
-        source = list(self.G.nodes())[0]  # Ou choisir dynamiquement
-        try:
-            from algorithmes.bellman_ford import bellman_ford
-            bellman_ford(self.G, source, self.visualize_step)
-            self.timer.start(1000)
-        except ValueError as e:
-            QMessageBox.critical(self, "Error", str(e))
-            self.timer.stop()
+        if self.source_node:
+            try:
+                distances, predecessors, levels = bellman_ford(self.G, self.source_node)
+                self.path = self.extract_path(predecessors, self.source_node)
+                self.timer.start(1000)
+                # Utiliser les niveaux pour mettre à jour les positions
+                self.update_positions(levels)
+            except ValueError as e:
+                QMessageBox.critical(self, "Error", str(e))
+                self.timer.stop()
 
-    def visualize_step(self, graph, u, v, distances, predecessors):
-        self.animation_steps.append((u, v, dict(distances), dict(predecessors)))
+    def update_positions(self, levels):
+        max_level = max(levels.values()) + 1
+        level_width = max_level * 2  # Espace horizontal entre les niveaux
+        new_pos = {node: (levels[node] * level_width, -levels[node]) for node in self.G.nodes()}
+        nx.draw(self.G, pos=new_pos, ax=self.ax, with_labels=True, node_color='lightblue', edge_color='gray')
+        self.canvas.draw()
 
-    def update_visual(self):
-        if self.animation_steps:
-            u, v, distances, predecessors = self.animation_steps.pop(0)
-            self.ax.clear()
+    def on_click_bellman_ford(self, event):
+        x_click, y_click = event.xdata, event.ydata
+        closest_node = min(self.G.nodes, key=lambda node: np.hypot(self.pos[node][0] - x_click, self.pos[node][1] - y_click))
+        if not self.source_node:
+            self.source_node = closest_node
+            self.highlight_node(self.source_node, "green")
+            self.start_button.setEnabled(True)
+        elif not self.target_node and self.source_node != closest_node:
+            self.target_node = closest_node
+            self.highlight_node(self.target_node, "red")
 
-            # Organiser les nœuds par niveaux
-            levels = {}
-            for node, dist in distances.items():
-                if dist not in levels:
-                    levels[dist] = []
-                levels[dist].append(node)
+    def highlight_node(self, node, color):
+        nx.draw_networkx_nodes(self.G, self.pos, nodelist=[node], node_color=color, ax=self.ax, node_size=500)
+        self.canvas.draw()
 
-            # Dessiner les nœuds par niveaux
-            level_positions = {}
-            for level, nodes in levels.items():
-                for i, node in enumerate(nodes):
-                    level_positions[node] = (i, -level)
-
-            # Vérifier les positions pour éviter les valeurs invalides
-            for node, (x, y) in level_positions.items():
-                if not (isinstance(x, (int, float)) and isinstance(y, (int, float))):
-                    raise ValueError(f"Invalid position for node {node}: ({x}, {y})")
-
-            nx.draw(self.G, pos=level_positions, ax=self.ax, with_labels=True, node_color='lightblue')
-            nx.draw_networkx_edges(self.G, pos=level_positions, ax=self.ax, edgelist=[(u, v)], edge_color='red', width=2)
-            
-            # Affichez les distances sur les noeuds
-            labels = {node: f"{node}\n{distances[node]}" for node in self.G.nodes()}
-            nx.draw_networkx_labels(self.G, pos=level_positions, ax=self.ax, labels=labels)
-            self.canvas.draw()
-        else:
-            self.timer.stop()
-
-    def closeEvent(self, event):
-        self.timer.stop()  # Assurez-vous que le timer est arrêté lorsque la fenêtre est fermée
+    def draw_graph(self):
+        self.ax.clear()
+        nx.draw(self.G, self.pos, ax=self.ax, with_labels=True, node_color='lightblue', edge_color='gray')
+        self.canvas.draw()
