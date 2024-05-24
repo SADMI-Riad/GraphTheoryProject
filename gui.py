@@ -513,17 +513,20 @@ class GraphDesigner(QMainWindow):
                     self._save_graph_data(name, user_data)
                 self.sauvegarderButton.setDisabled(True)
 
+
     def _save_graph_data(self, name, user_data):
         username = get_current_user()
         graph_data = {
             "nodes": list(self.G.nodes()),
             "edges": list(self.G.edges(data=True)),
             "positions": {node: (float(pos[0]), float(pos[1])) for node, pos in self.pos.items()},
+            "node_counter": self.node_counter
         }
         user_data[username]["graphs"][name] = graph_data
         save_user_data(user_data)
         QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
-        
+
+
     def load_graph(self, name):
         username = get_current_user()
         user_data = load_user_data()
@@ -534,9 +537,11 @@ class GraphDesigner(QMainWindow):
             self.G.add_nodes_from(graph_data["nodes"])
             self.G.add_edges_from((u, v, d) for u, v, d in graph_data["edges"])
             self.pos = {node: (pos[0], pos[1]) for node, pos in graph_data["positions"].items()}
+            self.node_counter = graph_data.get("node_counter", max(graph_data["nodes"]) + 1)  # Restore the node counter
             self.redraw_graph()
         else:
             QMessageBox.warning(self, "Erreur", "Le graphe n'existe pas ou n'a pas été trouvé.")
+
 
     def reset_buttons_states(self):
         self.algorithmsButton.setEnabled(True)
