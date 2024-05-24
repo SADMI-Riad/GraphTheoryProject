@@ -58,8 +58,8 @@ class BellmanFordWindow(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
 
-        self.start_button = QPushButton("Start Bellman-Ford", self)
-        self.start_button.clicked.connect(self.start_bellman_ford)
+        self.start_button = QPushButton("recommencer", self)
+        self.start_button.clicked.connect(self.reset)
         layout.addWidget(self.start_button)
 
         self.timer = QTimer(self)
@@ -87,7 +87,7 @@ class BellmanFordWindow(QMainWindow):
         elif not self.target_node and self.source_node != closest_node:
             self.target_node = closest_node
             self.highlight_node(self.target_node, "red")
-            self.run_bellman_ford()
+            self.start_bellman_ford()
 
     def highlight_node(self, node, color):
         nx.draw_networkx_nodes(self.G, self.pos, nodelist=[node], node_color=color, ax=self.ax, node_size=500)
@@ -159,3 +159,5 @@ class BellmanFordWindow(QMainWindow):
         self.pos = update_positions(self.initial_levels)  # Restore initial positions
         self.draw_graph()
         self.canvas.draw()
+        self.start_button.setEnabled(False)  # Disable start button until nodes are selected again
+        self.canvas.mpl_connect("button_press_event", self.on_click_bellman_ford)
