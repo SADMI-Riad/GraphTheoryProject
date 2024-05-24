@@ -16,7 +16,8 @@ from PyQt5.QtWidgets import (
     QToolButton,
     QMenu,
     QAction,
-    QApplication
+    QApplication,
+    QFrame
 )
 import random
 from PyQt5.QtGui import QFont
@@ -58,7 +59,33 @@ QPushButton:disabled {
 }
 
 """
+menu_style = """
+QMenu {
+    background-color: #ffffff;
+    border: 1px solid #aaa;
+    padding: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
 
+QMenu::item {
+    background-color: transparent;
+    padding: 5px 20px;
+    margin: 0px 5px;
+    border-radius: 5px;
+}
+
+QMenu::item:selected {
+    background-color: #e9e9e9;
+    color: #333;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: #aaa;
+    margin: 5px 0;
+}
+"""
 
 def load_user_data():
     if not os.path.exists("user_data.pkl"):
@@ -283,21 +310,28 @@ class GraphDesigner(QMainWindow):
 
         button_layout = QVBoxLayout()
         main_layout.addLayout(button_layout)
-
+        self.canvas_frame = QFrame(self)
+        self.canvas_frame.setFrameShape(QFrame.Box)
+        self.canvas_frame.setFrameShadow(QFrame.Raised)
+        self.canvas_frame.setLineWidth(2)
+        self.canvas_layout = QVBoxLayout(self.canvas_frame)
         self.figure = plt.figure()
+        self.figure.subplots_adjust(left=0, right=1, top=1, bottom=0)  
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
         self.ax.axis("off")
         self.canvas = FigureCanvas(self.figure)
-        main_layout.addWidget(self.canvas)
-
+        self.canvas_layout.addWidget(self.canvas)
+        main_layout.addWidget(self.canvas_frame)
+        
         self.algorithmsButton = QToolButton(self)
         self.algorithmsButton.setText("Algorithmes")
         self.algorithmsButton.setStyleSheet(button_style)
         self.algorithmsButton.setFixedWidth(200)
         self.algorithmsMenu = QMenu(self)
         self.algorithmsButton.setMenu(self.algorithmsMenu)
+        self.algorithmsMenu.setStyleSheet(menu_style)
         self.algorithmsButton.setPopupMode(QToolButton.InstantPopup)
         button_layout.addWidget(self.algorithmsButton)
 
@@ -686,7 +720,7 @@ class GraphDesigner(QMainWindow):
         confirm = QMessageBox.question(
             self,
             "Confirm Deletion",
-            f"Do you confirm you want to delete node {node_id}?",
+            f"vous confirmez vous voulez supprimer ce sommet {node_id}?",
             QMessageBox.Yes | QMessageBox.No,
         )
         if confirm == QMessageBox.Yes:
@@ -694,7 +728,7 @@ class GraphDesigner(QMainWindow):
             del self.pos[node_id]
             redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
             self.sauvegarderButton.setEnabled(True)
-            self.mode = None
+            self.mode = "deleting_nodes" if self.deleteNodeButton.isChecked() else None
             self.update_button_styles()
 
     def handle_edge_deletion(self, x, y):
@@ -703,14 +737,14 @@ class GraphDesigner(QMainWindow):
             confirm = QMessageBox.question(
                 self,
                 "Confirm Deletion",
-                f"Do you confirm you want to delete edge {closest_edge}?",
+                f"vous confirmer vous voulez supprimer cette arc : {closest_edge}?",
                 QMessageBox.Yes | QMessageBox.No,
             )
             if confirm == QMessageBox.Yes:
                 self.G.remove_edge(*closest_edge)
                 redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
                 self.sauvegarderButton.setEnabled(True)
-                self.mode = None
+                self.mode = "deleting_edges" if self.deleteEdgeButton.isChecked() else None
                 self.update_button_styles()
 
     def get_closest_node(self, x, y):
@@ -833,7 +867,7 @@ class GraphDesigner(QMainWindow):
         
     def logout(self):
         set_current_user(None)  # Effacer l'utilisateur actuel 
-        app = QApplication(sys.argv)
-        login_page = LoginPage()
-        login_page.show()
-        sys.exit(app.exec_())
+        self.login_page = LoginPage()  # Créer une instance de la page de connexion
+        self.login_page.show()  # Afficher la page de connexion
+        self.close()  # Fermer la fenêtre actuelle
+
