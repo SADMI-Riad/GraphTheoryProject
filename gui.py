@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
     QApplication,
-    QFrame
+    QFrame,
 )
 import random
 from PyQt5.QtGui import QFont
@@ -86,6 +86,7 @@ QMenu::separator {
     margin: 5px 0;
 }
 """
+
 
 def load_user_data():
     if not os.path.exists("user_data.pkl"):
@@ -316,7 +317,7 @@ class GraphDesigner(QMainWindow):
         self.canvas_frame.setLineWidth(2)
         self.canvas_layout = QVBoxLayout(self.canvas_frame)
         self.figure = plt.figure()
-        self.figure.subplots_adjust(left=0, right=1, top=1, bottom=0)  
+        self.figure.subplots_adjust(left=0, right=1, top=1, bottom=0)
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
@@ -324,7 +325,7 @@ class GraphDesigner(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         self.canvas_layout.addWidget(self.canvas)
         main_layout.addWidget(self.canvas_frame)
-        
+
         self.algorithmsButton = QToolButton(self)
         self.algorithmsButton.setText("Algorithmes")
         self.algorithmsButton.setStyleSheet(button_style)
@@ -406,7 +407,7 @@ class GraphDesigner(QMainWindow):
         self.deleteEdgeButton.setStyleSheet(button_style)
         self.deleteEdgeButton.clicked.connect(self.toggle_delete_edge_mode)
         button_layout.addWidget(self.deleteEdgeButton)
-        
+
         self.mainMenuButton = QPushButton("Menu Principal", self)
         self.mainMenuButton.setStyleSheet(button_style)
         self.mainMenuButton.setFixedWidth(200)
@@ -692,7 +693,7 @@ class GraphDesigner(QMainWindow):
         else:
             if self.selected_node_for_edge_creation == node_id:
                 weight, ok = QInputDialog.getInt(
-                    self, "Poids de la boucle", "Entrez le poids de la boucle:", min=1
+                    self, "Poids de la boucle", "Entrez le poids de la boucle:", min=-20
                 )
                 if ok:
                     self.G.add_edge(node_id, node_id, weight=weight)
@@ -744,7 +745,9 @@ class GraphDesigner(QMainWindow):
                 self.G.remove_edge(*closest_edge)
                 redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
                 self.sauvegarderButton.setEnabled(True)
-                self.mode = "deleting_edges" if self.deleteEdgeButton.isChecked() else None
+                self.mode = (
+                    "deleting_edges" if self.deleteEdgeButton.isChecked() else None
+                )
                 self.update_button_styles()
 
     def get_closest_node(self, x, y):
@@ -803,7 +806,7 @@ class GraphDesigner(QMainWindow):
             y + 2 * loop_radius,
             str(weight),
             color="darkblue",  # Changer la couleur pour une meilleure visibilité
-            fontsize=10,  # Ajuster la taille du texte si nécessaire
+            fontsize=7,  # Ajuster la taille du texte si nécessaire
             ha="center",
             va="center",
             bbox=dict(
@@ -852,11 +855,9 @@ class GraphDesigner(QMainWindow):
 
     def animateBellmanFord(self):
         try:
-            bellman_ford_window = BellmanFordWindow(self.G, self.pos)
+            bellman_ford_window = BellmanFordWindow(self.G)
             bellman_ford_window.show()
-            self.animation_windows.append(
-                bellman_ford_window
-            )  # Gardez une référence pour éviter la fermeture prématurée
+            self.animation_windows.append(bellman_ford_window)
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Une erreur s'est produite: {str(e)}")
 
@@ -864,10 +865,9 @@ class GraphDesigner(QMainWindow):
         self.main_menu = MainMenu()
         self.main_menu.show()
         self.close()
-        
+
     def logout(self):
-        set_current_user(None)  # Effacer l'utilisateur actuel 
+        set_current_user(None)  # Effacer l'utilisateur actuel
         self.login_page = LoginPage()  # Créer une instance de la page de connexion
         self.login_page.show()  # Afficher la page de connexion
         self.close()  # Fermer la fenêtre actuelle
-
