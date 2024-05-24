@@ -16,7 +16,8 @@ class BellmanFordWindow(QMainWindow):
         self.setWindowTitle("Bellman-Ford Animation")
         self.setGeometry(150, 150, 800, 600)
         widget = QWidget(self)
-        layout = QVBoxLayout(widget)
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
         self.setCentralWidget(widget)
 
         self.figure = plt.figure()
@@ -35,7 +36,7 @@ class BellmanFordWindow(QMainWindow):
     def start_bellman_ford(self):
         source = list(self.G.nodes())[0]  # Ou choisir dynamiquement
         try:
-            from bellman_ford import bellman_ford
+            from algorithmes.bellman_ford import bellman_ford
             bellman_ford(self.G, source, self.visualize_step)
             self.timer.start(1000)
         except ValueError as e:
@@ -49,8 +50,31 @@ class BellmanFordWindow(QMainWindow):
         if self.animation_steps:
             u, v, distances, predecessors = self.animation_steps.pop(0)
             self.ax.clear()
-            nx.draw(self.G, pos=self.pos, ax=self.ax, with_labels=True, node_color='lightblue')
-            # Ajoutez plus de détails ici pour montrer les poids, etc.
+
+            # Organiser les nœuds par niveaux
+            levels = {}
+            for node, dist in distances.items():
+                if dist not in levels:
+                    levels[dist] = []
+                levels[dist].append(node)
+
+            # Dessiner les nœuds par niveaux
+            level_positions = {}
+            for level, nodes in levels.items():
+                for i, node in enumerate(nodes):
+                    level_positions[node] = (i, -level)
+
+            # Vérifier les positions pour éviter les valeurs invalides
+            for node, (x, y) in level_positions.items():
+                if not (isinstance(x, (int, float)) and isinstance(y, (int, float))):
+                    raise ValueError(f"Invalid position for node {node}: ({x}, {y})")
+
+            nx.draw(self.G, pos=level_positions, ax=self.ax, with_labels=True, node_color='lightblue')
+            nx.draw_networkx_edges(self.G, pos=level_positions, ax=self.ax, edgelist=[(u, v)], edge_color='red', width=2)
+            
+            # Affichez les distances sur les noeuds
+            labels = {node: f"{node}\n{distances[node]}" for node in self.G.nodes()}
+            nx.draw_networkx_labels(self.G, pos=level_positions, ax=self.ax, labels=labels)
             self.canvas.draw()
         else:
             self.timer.stop()

@@ -66,8 +66,6 @@ QPushButton:disabled {
 
 """
 
-
-
 def load_user_data():
     if not os.path.exists("user_data.pkl"):
         return {}
@@ -261,10 +259,14 @@ class GraphDesigner(QMainWindow):
         self.mode = None
         self.selected_node_for_edge_creation = None
         self.G = nx.DiGraph()
+        self.G.graph_designer = self  # Assign the graph designer to the graph object
         self.pos = {}
         self.stable_sets = {}
         self.animation_steps = []
         self.animation_windows = []
+        self.node_counter = 1  # Initialize the node counter
+
+
 
     def initUI(self):
         self.setWindowTitle("Graph Designer")
@@ -339,28 +341,6 @@ class GraphDesigner(QMainWindow):
         self.sauvegarderButton.setDisabled(True)
         button_layout.addWidget(self.sauvegarderButton)
 
-        self.deleteNodeButton = QPushButton("Supprimer sommet")
-        self.deleteNodeButton.setFixedWidth(200)
-        self.deleteNodeButton.setStyleSheet(button_style)
-        self.deleteNodeButton.clicked.connect(self.enableDeleteNodeMode)
-        self.deleteNodeButton.setDisabled(True)
-        button_layout.addWidget(self.deleteNodeButton)
-
-        self.deleteEdgeButton = QPushButton("Supprimer arc")
-        self.deleteEdgeButton.setFixedWidth(200)
-        self.deleteEdgeButton.setStyleSheet(button_style)
-        self.deleteEdgeButton.clicked.connect(self.enableDeleteEdgeMode)
-        self.deleteEdgeButton.setDisabled(True)
-        button_layout.addWidget(self.deleteEdgeButton)
-
-        self.stopDeletionModeButton = QPushButton("Arrêter le mode suppression")
-        self.stopDeletionModeButton.setFixedWidth(200)
-        self.stopDeletionModeButton.setStyleSheet(button_style)
-        self.stopDeletionModeButton.setDisabled(True)
-        self.stopDeletionModeButton.clicked.connect(self.stopDeleteMode)
-        button_layout.addWidget(self.stopDeletionModeButton)
-
-        self.set_initial_button_states()
         self.addNodeButton = QPushButton("Add Node", self)
         self.addNodeButton.setFixedWidth(200)
         self.addNodeButton.setStyleSheet(button_style)
@@ -368,7 +348,6 @@ class GraphDesigner(QMainWindow):
         self.addNodeButton.clicked.connect(self.toggle_add_node_mode)
         button_layout.addWidget(self.addNodeButton)
 
-        # Bouton pour ajouter des arcs
         self.addEdgeButton = QPushButton("Add Edge", self)
         self.addEdgeButton.setCheckable(True)
         self.addEdgeButton.setFixedWidth(200)
@@ -377,7 +356,23 @@ class GraphDesigner(QMainWindow):
         self.addEdgeButton.clicked.connect(self.toggle_add_edge_mode)
         button_layout.addWidget(self.addEdgeButton)
 
+        self.deleteNodeButton = QPushButton("Supprimer sommet")
+        self.deleteNodeButton.setCheckable(True)
+        self.deleteNodeButton.setFixedWidth(200)
+        self.deleteNodeButton.setStyleSheet(button_style)
+        self.deleteNodeButton.clicked.connect(self.toggle_delete_node_mode)
+        button_layout.addWidget(self.deleteNodeButton)
+
+        self.deleteEdgeButton = QPushButton("Supprimer arc")
+        self.deleteEdgeButton.setCheckable(True)
+        self.deleteEdgeButton.setFixedWidth(200)
+        self.deleteEdgeButton.setStyleSheet(button_style)
+        self.deleteEdgeButton.clicked.connect(self.toggle_delete_edge_mode)
+        button_layout.addWidget(self.deleteEdgeButton)
+
         self.canvas.mpl_connect("button_press_event", self.on_click)
+
+        self.set_initial_button_states()
 
         button_layout.addStretch()
 
@@ -385,79 +380,99 @@ class GraphDesigner(QMainWindow):
         if self.addNodeButton.isChecked():
             self.mode = "add_node"
             self.addEdgeButton.setChecked(False)
-            self.set_initial_button_states()
+            self.deleteNodeButton.setChecked(False)
+            self.deleteEdgeButton.setChecked(False)
         else:
             self.mode = None
-            self.reset_buttons_states()
-
         self.update_button_styles()
 
     def toggle_add_edge_mode(self):
         if self.addEdgeButton.isChecked():
             self.mode = "add_edge"
             self.addNodeButton.setChecked(False)
-            self.set_initial_button_states()
+            self.deleteNodeButton.setChecked(False)
+            self.deleteEdgeButton.setChecked(False)
         else:
             self.mode = None
-            self.reset_buttons_states()
         self.update_button_styles()
+
+
+    def toggle_delete_node_mode(self):
+        if self.deleteNodeButton.isChecked():
+            self.mode = "deleting_nodes"
+            self.addNodeButton.setChecked(False)
+            self.addEdgeButton.setChecked(False)
+            self.deleteEdgeButton.setChecked(False)
+        else:
+            self.mode = None
+        self.update_button_styles()
+
+    def toggle_delete_edge_mode(self):
+        if self.deleteEdgeButton.isChecked():
+            self.mode = "deleting_edges"
+            self.addNodeButton.setChecked(False)
+            self.addEdgeButton.setChecked(False)
+            self.deleteNodeButton.setChecked(False)
+        else:
+            self.mode = None
+        self.update_button_styles()
+
 
     def update_button_styles(self):
         active_style = """
         QPushButton {
-                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #b4ec51, stop:1 #429321);
-                color: white;
-                border-color: #5fa837;
-                border: 1px solid #aaa;
-                border-radius: 10px;
-                padding: 5px 20px;
-                font-size: 14px;
-                font-weight: bold;
-                text-align: center;
-                text-transform: uppercase;
+            background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #b4ec51, stop:1 #429321);
+            color: white;
+            border-color: #5fa837;
+            border: 1px solid #aaa;
+            border-radius: 10px;
+            padding: 5px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
         }
-                QPushButton:hover {
-                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #e9e9e9, stop:1 #d9d9d9);
-                border-color: #899;
+        QPushButton:hover {
+            background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #e9e9e9, stop:1 #d9d9d9);
+            border-color: #899;
         }
         QPushButton:pressed {
-                background-color: #d9d9d9;
-                border-color: #670;
+            background-color: #d9d9d9;
+            border-color: #670;
         }
         """
 
-        if self.addNodeButton.isChecked():
-            self.addNodeButton.setStyleSheet(active_style)
-        else:
-            self.addNodeButton.setStyleSheet(button_style)
+        buttons = [self.addNodeButton, self.addEdgeButton, self.deleteNodeButton, self.deleteEdgeButton]
 
-        if self.addEdgeButton.isChecked():
-            self.addEdgeButton.setStyleSheet(active_style)
+        for button in buttons:
+            if button.isChecked():
+                button.setStyleSheet(active_style)
+            else:
+                button.setStyleSheet(button_style)
+
+        # Ensure buttons are enabled appropriately
+        self.addNodeButton.setEnabled(True)
+        if len(self.G.nodes) > 0:
+            self.addEdgeButton.setEnabled(True)
+            self.deleteNodeButton.setEnabled(True)
+            self.deleteEdgeButton.setEnabled(True)
+            self.sauvegarderButton.setEnabled(True)
+            self.algorithmsButton.setEnabled(True)
         else:
-            self.addEdgeButton.setStyleSheet(button_style)
+            self.addEdgeButton.setDisabled(True)
+            self.deleteNodeButton.setDisabled(True)
+            self.deleteEdgeButton.setDisabled(True)
+            self.sauvegarderButton.setDisabled(True)
+            self.algorithmsButton.setDisabled(True)
 
     def set_initial_button_states(self):
-        self.algorithmsButton.setDisabled(True)
-        self.sauvegarderButton.setDisabled(True)
+        self.addNodeButton.setEnabled(True)
+        self.addEdgeButton.setEnabled(True)
         self.deleteNodeButton.setDisabled(True)
         self.deleteEdgeButton.setDisabled(True)
-        self.stopDeletionModeButton.setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setDisabled(
-            True
-        )
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Kruskal pour Le Max-st"
-        ).setDisabled(True)
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Kruskal pour Le Min-st"
-        ).setDisabled(True)
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Prim pour Le Max-st"
-        ).setDisabled(True)
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Prim pour Le Min-st"
-        ).setDisabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setDisabled(True)
+        self.sauvegarderButton.setDisabled(True)
+        self.algorithmsButton.setDisabled(True)
+
 
     def find_menu_action(self, menu, action_text):
         for action in menu.actions():
@@ -498,17 +513,20 @@ class GraphDesigner(QMainWindow):
                     self._save_graph_data(name, user_data)
                 self.sauvegarderButton.setDisabled(True)
 
+
     def _save_graph_data(self, name, user_data):
         username = get_current_user()
         graph_data = {
             "nodes": list(self.G.nodes()),
             "edges": list(self.G.edges(data=True)),
             "positions": {node: (float(pos[0]), float(pos[1])) for node, pos in self.pos.items()},
+            "node_counter": self.node_counter
         }
         user_data[username]["graphs"][name] = graph_data
         save_user_data(user_data)
         QMessageBox.information(self, "Succès", "Graphe sauvegardé avec succès.")
-        
+
+
     def load_graph(self, name):
         username = get_current_user()
         user_data = load_user_data()
@@ -519,30 +537,22 @@ class GraphDesigner(QMainWindow):
             self.G.add_nodes_from(graph_data["nodes"])
             self.G.add_edges_from((u, v, d) for u, v, d in graph_data["edges"])
             self.pos = {node: (pos[0], pos[1]) for node, pos in graph_data["positions"].items()}
+            self.node_counter = graph_data.get("node_counter", max(graph_data["nodes"]) + 1)  # Restore the node counter
             self.redraw_graph()
         else:
             QMessageBox.warning(self, "Erreur", "Le graphe n'existe pas ou n'a pas été trouvé.")
+
 
     def reset_buttons_states(self):
         self.algorithmsButton.setEnabled(True)
         self.sauvegarderButton.setEnabled(True)
         self.deleteNodeButton.setEnabled(True)
         self.deleteEdgeButton.setEnabled(True)
-        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(
-            True
-        )
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Kruskal pour Le Max-st"
-        ).setEnabled(True)
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Kruskal pour Le Min-st"
-        ).setEnabled(True)
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Prim pour Le Max-st"
-        ).setEnabled(True)
-        self.find_menu_action(
-            self.algorithmsMenu, "Animer Prim pour Le Min-st"
-        ).setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Welsh-Powell").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Max-st").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Kruskal pour Le Min-st").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Max-st").setEnabled(True)
+        self.find_menu_action(self.algorithmsMenu, "Animer Prim pour Le Min-st").setEnabled(True)
         self.find_menu_action(self.algorithmsMenu, "Animer Dijkstra").setEnabled(True)
 
     def animateWelshPowell(self):
@@ -583,52 +593,32 @@ class GraphDesigner(QMainWindow):
         self.animation_windows.append(animation_window)
         animation_window.show()
 
-    def enableDeleteNodeMode(self):
-        self.mode = "deleting_nodes"
-        self.deleteNodeButton.setDisabled(True)
-        self.deleteEdgeButton.setDisabled(True)
-        self.stopDeletionModeButton.setEnabled(True)
-        self.algorithmsButton.setDisabled(True)
-        self.sauvegarderButton.setDisabled(True)
-        QMessageBox.information(
-            self,
-            "Mode Change",
-            "Delete node mode activated. Click on a node to delete it.",
-        )
-
-    def enableDeleteEdgeMode(self):
-        self.mode = "deleting_edges"
-        self.deleteNodeButton.setDisabled(True)
-        self.deleteEdgeButton.setDisabled(True)
-        self.stopDeletionModeButton.setEnabled(True)
-        self.algorithmsButton.setDisabled(True)
-        self.sauvegarderButton.setDisabled(True)
-        QMessageBox.information(
-            self,
-            "Mode Change",
-            "Delete edge mode activated. Click on an edge to delete it.",
-        )
-
-    def stopDeleteMode(self):
-        self.mode = None
-        self.deleteNodeButton.setEnabled(True)
-        self.deleteEdgeButton.setEnabled(True)
-        self.stopDeletionModeButton.setDisabled(True)
-        self.algorithmsButton.setEnabled(True)
-        self.sauvegarderButton.setEnabled(False)
-        QMessageBox.information(self, "Mode Change", "Delete mode deactivated.")
+    def animateBellmanFord(self):
+        try:
+            bellman_ford_window = BellmanFordWindow(self.G, self.pos)
+            bellman_ford_window.show()
+            self.animation_windows.append(bellman_ford_window)
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur", f"Une erreur s'est produite: {str(e)}")
 
     def on_click(self, event):
         if event.inaxes:
             x, y = event.xdata, event.ydata
             if self.mode == "add_node":
                 addNode(self.G, self.pos, x, y, self.ax, self.canvas)
+                if len(self.G.nodes) > 0:
+                    self.addEdgeButton.setEnabled(True)
+                    self.deleteNodeButton.setEnabled(True)
+                    self.deleteEdgeButton.setEnabled(True)
+                    self.sauvegarderButton.setEnabled(True)
+                    self.algorithmsButton.setEnabled(True)
             elif self.mode == "add_edge":
                 self.handle_edge_creation(x, y)
             elif self.mode == "deleting_nodes":
                 self.handle_node_deletion(x, y)
             elif self.mode == "deleting_edges":
                 self.handle_edge_deletion(x, y)
+
 
     def handle_edge_creation(self, x, y):
         node_id = self.get_closest_node(x, y)
@@ -673,6 +663,9 @@ class GraphDesigner(QMainWindow):
             del self.pos[node_id]
             redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
             self.sauvegarderButton.setEnabled(True)
+            self.mode = None
+            self.update_button_styles()
+
 
     def handle_edge_deletion(self, x, y):
         closest_edge = self.get_closest_edge(x, y)
@@ -687,6 +680,8 @@ class GraphDesigner(QMainWindow):
                 self.G.remove_edge(*closest_edge)
                 redrawGraph(self.ax, self.G, self.pos, [], self.canvas)
                 self.sauvegarderButton.setEnabled(True)
+                self.mode = None
+                self.update_button_styles()
 
     def get_closest_node(self, x, y):
         return min(
