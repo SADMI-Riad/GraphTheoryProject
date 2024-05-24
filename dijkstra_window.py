@@ -13,6 +13,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import heapq
 
+import numpy as np
+
 
 class DijkstraWindow(QMainWindow):
     def __init__(self, G, pos):
@@ -24,7 +26,8 @@ class DijkstraWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle("Animation Dijkstra")
         self.setGeometry(150, 150, 800, 600)
-
+        self.source_node = None
+        self.target_node = None
         widget = QWidget(self)
         layout = QVBoxLayout()
         widget.setLayout(layout)
@@ -38,35 +41,31 @@ class DijkstraWindow(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
 
-        self.source_label = QLabel("Select Source Node:", self)
-        layout.addWidget(self.source_label)
-        self.source_combo = QComboBox(self)
-        self.source_combo.addItems([str(node) for node in self.G.nodes()])
-        layout.addWidget(self.source_combo)
+        self.reset_button = QPushButton("Reset", self)
+        self.reset_button.clicked.connect(self.reset)
+        layout.addWidget(self.reset_button)
 
-        self.target_label = QLabel("Select Target Node:", self)
-        layout.addWidget(self.target_label)
-        self.target_combo = QComboBox(self)
-        self.target_combo.addItems([str(node) for node in self.G.nodes()])
-        layout.addWidget(self.target_combo)
-
-        self.run_button = QPushButton("Run Dijkstra", self)
-        self.run_button.clicked.connect(self.run_dijkstra)
-        layout.addWidget(self.run_button)
+        self.canvas.mpl_connect("button_press_event", self.on_click_djik)
+        self.draw_graph()
 
     def run_dijkstra(self):
-        source_node = int(self.source_combo.currentText())
-        target_node = int(self.target_combo.currentText())
-        self.animation_steps = []
-        self.distances, self.previous_nodes = self.dijkstra(
-            self.G, source_node, self.visualize_step
-        )
-        self.shortest_path = self.extract_shortest_path(
-            self.previous_nodes, source_node, target_node
-        )
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_graph_dijkstra)
-        self.timer.start(1000)
+        if self.source_node is not None and self.target_node is not None:
+            self.animation_steps = []
+            self.distances, self.previous_nodes = self.dijkstra(
+                self.G, self.source_node, self.visualize_step
+            )
+            self.shortest_path = self.extract_shortest_path(
+                self.previous_nodes, self.source_node, self.target_node
+            )
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.update_graph_dijkstra)
+            self.timer.start(1000)
+        else:
+            QMessageBox.warning(
+                self,
+                "Warning",
+                "Please select both source and target nodes before running Dijkstra.",
+            )
 
     def dijkstra(self, graph, source, visualize_step=None):
         distances = {vertex: float("infinity") for vertex in graph.nodes()}
@@ -205,3 +204,50 @@ class DijkstraWindow(QMainWindow):
         else:
             QMessageBox.warning(self, "Error", "No path found from source to target.")
             return []
+
+    def on_click_djik(self, event):
+        x_click, y_click = event.xdata, event.ydata
+        # Find closest node
+        closest_node = min(
+            self.G.nodes,
+            key=lambda node: np.hypot(
+                self.pos[node][0] - x_click, self.pos[node][1] - y_click
+            ),
+        )
+        if not self.source_node:
+            self.source_node = closest_node
+            self.highlight_node(self.source_node, "green")
+        elif not self.target_node and self.source_node != closest_node:
+            self.target_node = closest_node
+            self.highlight_node(self.target_node, "red")
+            self.run_dijkstra() 
+
+    def highlight_node(self, node, color):
+        nx.draw_networkx_nodes(
+            self.G,
+            self.pos,
+            nodelist=[node],
+            node_color=color,
+            ax=self.ax,
+            node_size=500,
+        )
+        self.canvas.draw()
+
+    def reset(self):
+        self.source_node = None
+        self.target_node = None
+        self.ax.clear()
+        self.draw_graph()
+        self.canvas.draw()
+
+    def draw_graph(self):
+        self.ax.clear()
+        nx.draw(
+            self.G,
+            self.pos,
+            ax=self.ax,
+            with_labels=True,
+            node_color="lightblue",
+            edge_color="gray",
+        )
+        self.canvas.draw()
