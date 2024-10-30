@@ -18,6 +18,17 @@ The Graph Theory Application is an interactive, educational tool designed to sup
   - **Bellman-Ford Algorithm**: Handles graphs with negative weights.
 - **Stable Set Calculation**: Compute maximal stable sets.
 
+## Technologies Used
+
+<div align="center">
+    <img src="https://img.icons8.com/color/48/000000/python.png" alt="Python" width="60" />
+    <img src="https://img.icons8.com/color/48/000000/qt.png" alt="PyQt5" width="60" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/Networkx_logo.svg" alt="NetworkX" width="60" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Matplotlib_icon.svg" alt="Matplotlib" width="60" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/NumPy_logo_2020.svg" alt="NumPy" width="60" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Pickle_Rick.png/600px-Pickle_Rick.png" alt="Pickle" width="60" />
+</div>
+
 ## Getting Started
 
 ### Prerequisites
