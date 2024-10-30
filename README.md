@@ -1,42 +1,31 @@
 # Graph Theory Application
 
-### Authors:
-- **Sadmi Mohammed Riad**: 3rd Year ISIL, USTHB
-- **Mezghenna Mohanned**: 3rd Year Software Engineering, USTHB
+A powerful and interactive tool for creating, visualizing, and manipulating graphs with real-time algorithm animations.
 
-## Project Overview
+<div align="center">
+    <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status">
+    <img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License">
+    <img src="https://img.shields.io/badge/release-v1.0-blue" alt="Release Version">
+    <img src="https://img.shields.io/badge/Python-3.8%2B-blue" alt="Python Version">
+</div>
 
-The Graph Theory Application is an interactive, educational tool designed to support the creation, visualization, and manipulation of graphs. Developed with a focus on clarity and user interactivity, it combines the power of graph algorithms and visualization tools to simplify complex concepts in graph theory. This application is intended for students, researchers, and enthusiasts who wish to explore graph structures, understand core algorithms, and see them in action through intuitive animations.
+---
 
-Graph theory is fundamental in various domains, such as computer science, mathematics, logistics, and network analysis. This project brings these concepts to life with an easy-to-use graphical interface and detailed algorithm animations, allowing users to experiment and learn through interaction.
+## Overview
+
+The Graph Theory Application provides an intuitive interface for graph theory operations, including graph creation, manipulation, and algorithm animations. This project aims to support students, researchers, and developers in exploring graph theory concepts through interactive visuals. The application includes implementations of various graph algorithms with real-time visual feedback, making abstract graph theory concepts accessible and engaging.
 
 ---
 
 ## Features
 
-### Core Functionalities
-
-1. **Graph Creation & Manipulation**:
-   - Interactive creation of vertices (nodes) and edges (connections) on a canvas.
-   - Add weights to edges, representing costs, distances, or connections.
-   - Real-time updates and visual cues for modifying and interacting with graph components.
-   - Save and load graph states using the Pickle library, allowing for project continuity and graph data management.
-
-2. **Algorithm Visualizations**:
-   - Dynamic animations to visualize each step in graph algorithms, enhancing understanding of each process.
-   - Adjustable speed settings for each animation to allow users to view steps at their own pace.
-   - Real-time visual highlights for nodes and edges involved in current steps of each algorithm.
-
-3. **Graph Data Structures**:
-   - Robust data handling using `NetworkX` for efficient graph representation and operations.
-   - Incorporates essential graph properties like node degree, edge weight, adjacency, and connectivity.
-   - Supports both directed and undirected graphs for a wide range of applications.
-
-### User-Friendly GUI
-
-- **Canvas Design**: Users can create nodes by clicking directly on the canvas, with draggable edges connecting nodes.
-- **Algorithm Execution Panel**: Easy-to-use buttons for executing each algorithm, with options for stopping, pausing, or replaying animations.
-- **Visualization and Feedback**: Each algorithm provides real-time visual feedback, with color-coded highlights for nodes and edges, helping users grasp complex processes intuitively.
+- **Graph Creation & Manipulation**: Interactive creation of vertices and edges with easy-to-use visual controls.
+- **Algorithm Visualizations**:
+  - **Welsh-Powell Graph Coloring**: Assign colors to graph nodes such that no two adjacent nodes share the same color, minimizing the number of colors.
+  - **Prim’s Minimum Spanning Tree**: Visualize the minimum spanning tree of a weighted graph, connecting all nodes with the smallest possible edge weights.
+  - **Dijkstra’s Shortest Path**: Find the shortest path in a graph from a source node, useful for navigation and pathfinding.
+  - **Bellman-Ford Algorithm**: Compute shortest paths for graphs with negative weights, detecting negative weight cycles if they exist.
+- **Stable Set Calculation**: Identify maximal sets of non-adjacent nodes, useful in resource allocation and scheduling problems.
 
 ---
 
@@ -97,11 +86,11 @@ Each algorithm is implemented to demonstrate key concepts in graph theory, with 
 
 To run the application, you’ll need the following dependencies:
 
-- **Python 3.x**: Core programming language for running the application.
-- **PyQt5**: Required for the graphical interface, enabling interactive visual elements.
-- **Matplotlib**: For plotting and visualizing graph components.
-- **NetworkX**: Essential for graph representation, manipulation, and analysis.
-- **NumPy**: Provides support for mathematical operations and data handling.
+- **Python 3.x**
+- **PyQt5**
+- **Matplotlib**
+- **NetworkX**
+- **NumPy**
 
 Install dependencies with:
 ```bash
