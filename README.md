@@ -1,106 +1,96 @@
 # Graph Theory Application
 
-## Description
+A powerful and interactive tool for creating, visualizing, and manipulating graphs with real-time algorithm animations.
 
-Cette application de théorie des graphes est conçue pour aider les utilisateurs à créer, visualiser et manipuler des graphes. Elle permet de créer des sommets et des arcs, d'exécuter des algorithmes classiques tels que l'algorithme de Welsh-Powell pour le coloriage de graphes, l'algorithme de Prim pour trouver l'arbre couvrant minimum et l'algorithme de Dijkstra pour trouver le plus court chemin. Une fonctionnalité spéciale permet d'animer l'algorithme de Welsh-Powell pour visualiser le processus de coloriage.
+<div align="center">
+    <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status">
+    <img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License">
+    <img src="https://img.shields.io/badge/release-v1.0-blue" alt="Release Version">
+    <img src="https://img.shields.io/badge/Python-3.8%2B-blue" alt="Python Version">
+</div>
 
-## Fonctionnalités
+---
 
-- Création de sommets et d'arcs dans un graphe.
-- Visualisation de l'ensemble stable maximal.
-- Exécution et animation de l'algorithme de Welsh-Powell pour le coloriage de graphes.
-- Exécution de l'algorithme de Prim pour trouver l'arbre couvrant minimum.
-- Exécution de l'algorithme de Dijkstra pour trouver le plus court chemin.
+## Overview
 
-## Installation
+The Graph Theory Application provides an intuitive interface for graph theory operations, including graph creation, manipulation, and algorithm animations. This project aims to support students, researchers, and developers in exploring graph theory concepts through interactive visuals. The application includes implementations of various graph algorithms with real-time visual feedback, making abstract graph theory concepts accessible and engaging.
 
-1. Clonez le dépôt du projet :
-    ```sh
-    git clone <URL_du_dépôt>
-    cd <nom_du_dossier>
-    ```
+---
 
-2. Installez les dépendances nécessaires :
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-    Le fichier `requirements.txt` doit contenir les lignes suivantes :
-    ```
-    matplotlib
-    networkx
-    PyQt5
-    ```
-
-## Utilisation
-
-1. Exécutez l'application principale :
-    ```sh
-    python main.py
-    ```
-
-2. Utilisez l'interface graphique pour :
-   - Créer des sommets en cliquant sur le canevas.
-   - Terminer la création des sommets en cliquant sur "Fin création sommets".
-   - Ajouter des arcs en cliquant sur deux sommets et en entrant le poids de l'arc.
-   - Terminer la création des arcs en cliquant sur "Fin création arcs".
-   - Trouver l'ensemble stable maximal en cliquant sur "Trouver ensemble stable maximal".
-   - Animer l'algorithme de Welsh-Powell en cliquant sur "Animer Welsh-Powell".
-   - Exécuter l'algorithme de Prim en cliquant sur "Exécuter Prim".
-   - Exécuter l'algorithme de Dijkstra en cliquant sur "Exécuter Dijkstra".
-
-## Structure du Projet
-
-- `main.py` : Point d'entrée principal de l'application.
-- `gui.py` : Contient les classes pour l'interface graphique principale.
-- `graph_operations.py` : Contient les fonctions pour dessiner et mettre à jour le graphe.
-- `coloration.py` : Implémentation de l'algorithme de Welsh-Powell pour le coloriage de graphes.
-- `prim.py` : Implémentation de l'algorithme de Prim pour trouver l'arbre couvrant minimum.
-- `Dijkstra.py` : Implémentation de l'algorithme de Dijkstra pour trouver le plus court chemin.
-- `Animation_window.py` : Contient la classe pour animer l'algorithme de Welsh-Powell.
-
-
-
-# GUI QT5 :
 ## Features
 
-- **User Authentication**: Login and Register functionality with user data stored in a text file.
-- **Graph Designer**: Create nodes and edges interactively on a canvas.
-- **Algorithms**:
-  - **Welsh-Powell Coloring**: Animate the process of coloring a graph using the Welsh-Powell algorithm.
-  - **Prim's Algorithm**: Visualize the construction of a Minimum Spanning Tree (MST).
-  - **Dijkstra's Algorithm**: Find the shortest path from a source node.
+- **Graph Creation & Manipulation**: Interactive creation of vertices and edges with easy-to-use visual controls.
+- **Algorithm Visualizations**:
+  - **Welsh-Powell Graph Coloring**: Assign colors to graph nodes such that no two adjacent nodes share the same color, minimizing the number of colors.
+  - **Prim’s Minimum Spanning Tree**: Visualize the minimum spanning tree of a weighted graph, connecting all nodes with the smallest possible edge weights.
+  - **Dijkstra’s Shortest Path**: Find the shortest path in a graph from a source node, useful for navigation and pathfinding.
+  - **Bellman-Ford Algorithm**: Compute shortest paths for graphs with negative weights, detecting negative weight cycles if they exist.
+- **Stable Set Calculation**: Identify maximal sets of non-adjacent nodes, useful in resource allocation and scheduling problems.
 
-## Requirements
+---
 
-- Python 3.x
-- PyQt5
-- Matplotlib
-- NetworkX
-- Numpy
+## Technologies Used
 
-## Installation
+<div align="center">
+    <img src="https://img.icons8.com/color/48/000000/python.png" alt="Python" width="60" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Matplotlib_icon.svg" alt="Matplotlib" width="60" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/NumPy_logo_2020.svg" alt="NumPy" width="60" />
 
-1. Clone the repository:
+</div>
 
-   ```bash
-   git clone https://github.com/yourusername/graph-theory-app.git
-   cd graph-theory-app
+- **Python**: Core programming language, selected for its versatility and ease of integration with scientific libraries.
+- **PyQt5**: Framework used to build the graphical user interface, enabling interactive features and a responsive design.
+- **NetworkX**: Library for creating, analyzing, and visualizing graph structures. Essential for algorithm implementation and data handling.
+- **Matplotlib**: Used for generating visualizations and plots of graph structures.
+- **NumPy**: Provides essential support for mathematical operations and array handling.
+- **Pickle**: Allows saving and loading of graph data, ensuring continuity in graph design and experimentation.
 
+---
 
+## Algorithms
 
+Each algorithm is implemented to demonstrate key concepts in graph theory, with visualizations aiding understanding.
 
-## Exemple d'utilisation
+- **Welsh-Powell Graph Coloring**:
+  - **Purpose**: This algorithm assigns colors to graph nodes such that no two adjacent nodes share the same color. By minimizing colors, it finds an optimal coloring solution useful in scheduling, register allocation, and more.
+  - **Process**: Nodes are sorted by degree (number of connections), and each node is assigned the lowest possible color not yet used by adjacent nodes.
+  - **Visualization**: Animates the process of selecting nodes and assigning colors, showcasing how the algorithm prioritizes high-degree nodes for efficient color allocation.
 
-# Creation des sommets et des arcs 
-![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/GraphExemple1.png)
+- **Prim’s Minimum Spanning Tree (MST)**:
+  - **Purpose**: Constructs a minimum spanning tree (MST) of a weighted, connected graph, finding a subset of edges connecting all vertices with minimal total weight. This is valuable in network design, such as for road, electrical, or computer networks.
+  - **Process**: Starts with a single node and repeatedly adds the cheapest edge that expands the tree, ensuring minimal weight while avoiding cycles.
+  - **Visualization**: Highlights edges as they’re added to the MST, providing a step-by-step view of the tree's growth.
 
-# Animation Welsh and Powell Algorithm (Coloration)
-![Alt text](https://github.com/SADMI-Riad/GraphTheoryProject/blob/mohanned/images/WelshPowell.png)
+- **Dijkstra’s Shortest Path**:
+  - **Purpose**: Computes the shortest path from a selected source node to all other nodes, optimizing travel distances or costs. Dijkstra’s algorithm is a foundational tool in navigation, logistics, and network routing.
+  - **Process**: The algorithm maintains a set of nodes with known shortest paths and incrementally updates distances to other nodes until the shortest paths to all reachable nodes are determined.
+  - **Visualization**: Illustrates incremental path expansion, enabling users to see how the algorithm updates the shortest paths dynamically.
 
-## Auteurs
+- **Bellman-Ford Algorithm**:
+  - **Purpose**: Similar to Dijkstra’s but can handle graphs with negative weights. It finds the shortest path from a source node while also detecting any negative weight cycles.
+  - **Process**: Repeatedly relaxes edges (updating distances) to ensure optimal paths, continuing until all paths are determined or a cycle is detected.
+  - **Visualization**: Shows each edge relaxation step, providing insight into how the algorithm manages updates and highlights any detected negative cycles.
 
-- Sadmi Mohammed Riad
-- Mezghenna Mohanned
+- **Maximal Stable Set Calculation**:
+  - **Purpose**: Finds a maximal set of non-adjacent nodes, useful in resource allocation, scheduling, and independent set analysis.
+  - **Process**: Iteratively selects nodes that aren’t adjacent to already selected nodes, ensuring that no two nodes in the set are connected.
+  - **Visualization**: Highlights selected nodes, providing a visual representation of the stable set within the graph.
 
+---
+
+## Getting Started
+
+### Prerequisites
+
+To run the application, you’ll need the following dependencies:
+
+- **Python 3.x**
+- **PyQt5**
+- **Matplotlib**
+- **NetworkX**
+- **NumPy**
+
+Install dependencies with:
+```bash
+pip install numpy networkx matplotlib PyQt5 pickle-mixin
 

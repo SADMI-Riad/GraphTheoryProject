@@ -700,7 +700,7 @@ class GraphDesigner(QMainWindow):
                     self.draw_loop(self.ax, self.pos, node_id, weight, self.canvas)
             else:
                 weight, ok = QInputDialog.getInt(
-                    self, "Poids de l'arc", "Entrez le poids de l'arc:", min=1
+                    self, "Poids de l'arc", "Entrez le poids de l'arc:", min=-20
                 )
                 if ok:
                     self.G.add_edge(
@@ -867,7 +867,9 @@ class GraphDesigner(QMainWindow):
         self.close()
 
     def logout(self):
-        set_current_user(None)  # Effacer l'utilisateur actuel
-        self.login_page = LoginPage()  # Créer une instance de la page de connexion
-        self.login_page.show()  # Afficher la page de connexion
-        self.close()  # Fermer la fenêtre actuelle
+        set_current_user(None)  
+        self.login_page = LoginPage() 
+        self.login_page.show() 
+        self.close()
+
+
