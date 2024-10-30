@@ -33,11 +33,9 @@ The Graph Theory Application provides an intuitive interface for graph theory op
 
 <div align="center">
     <img src="https://img.icons8.com/color/48/000000/python.png" alt="Python" width="60" />
-    <img src="https://img.icons8.com/color/48/000000/qt.png" alt="PyQt5" width="60" />
-    <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/Networkx_logo.svg" alt="NetworkX" width="60" />
     <img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Matplotlib_icon.svg" alt="Matplotlib" width="60" />
     <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/NumPy_logo_2020.svg" alt="NumPy" width="60" />
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Pickle_Rick.png/600px-Pickle_Rick.png" alt="Pickle" width="60" />
+
 </div>
 
 - **Python**: Core programming language, selected for its versatility and ease of integration with scientific libraries.
@@ -94,4 +92,5 @@ To run the application, you’ll need the following dependencies:
 
 Install dependencies with:
 ```bash
-pip install -r requirements.txt
+pip install numpy networkx matplotlib PyQt5 pickle-mixin
+
